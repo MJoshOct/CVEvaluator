@@ -2,7 +2,7 @@
 # ── Docker Swarm ───────────────────────────────────
 secrets/
 docker-compose.override.yml
-docker-compose.*.env
+docker-compose.
 *.pem
 *.key
 *.crt   
