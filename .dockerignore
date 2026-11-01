@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.*
+secrets/
+*.pem
+*.key
+*.crt
+__pycache__/
+*.pyc
+.venv/
+venv/
+.dockerignore
+docker-compose*   
