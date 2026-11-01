@@ -4,4 +4,5 @@ This is a Project for as name suggests evaluating cv.
 
 Onboarding 
 please check and follow the instructions here
-cv-evaluator/ONBOARDING.md
+
+https://github.com/MJoshOct/CVEvaluator/blob/main/cv-evaluator/ONBOARDING.md
