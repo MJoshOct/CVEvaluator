@@ -1,0 +1,110 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cveval_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cveval_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-cveval_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cv-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cveval_user} -d ${POSTGRES_DB:-cveval_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.2"
+          memory: 256M
+
+  backend:
+    image: ${BACKEND_IMAGE:-cv-evaluator-backend:latest}
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cveval_user}:${POSTGRES_PASSWORD:-cveval_pass}@db:5432/${POSTGRES_DB:-cveval_db}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      AI_MODEL: ${AI_MODEL:-llama-3.1-8b-instant}
+      CORS_ORIGINS: "*"
+    ports:
+      - target: 8000
+        published: 8000
+        protocol: tcp
+        mode: ingress
+    networks:
+      - cv-network
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-cv-evaluator-frontend:latest}
+    ports:
+      - target: 80
+        published: 3000
+        protocol: tcp
+        mode: ingress
+    networks:
+      - cv-network
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cv-network:
+    driver: overlay
+    attachable: true

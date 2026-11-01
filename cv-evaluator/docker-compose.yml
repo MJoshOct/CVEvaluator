@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cv_evaluator_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cveval_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cveval_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-cveval_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cveval_user} -d ${POSTGRES_DB:-cveval_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - cv-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cv-evaluator-backend:latest
+    container_name: cv_evaluator_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cveval_user}:${POSTGRES_PASSWORD:-cveval_pass}@db:5432/${POSTGRES_DB:-cveval_db}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      AI_MODEL: ${AI_MODEL:-llama-3.1-8b-instant}
+      CORS_ORIGINS: "*"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cv-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: cv-evaluator-frontend:latest
+    container_name: cv_evaluator_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - cv-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cv-network:
+    driver: bridge

@@ -1,0 +1,82 @@
+{
+  "software_development": {
+    "id": "software_development",
+    "title": "Software Development",
+    "description": "General Software Engineer role focusing on system architecture, algorithms, backend/application design, and reliable software delivery.",
+    "core_skills": [
+      "Python", "Java", "C++", "C#", "Go", "Rust", "Data Structures", "Algorithms", "Object-Oriented Programming", "OOP", "Git"
+    ],
+    "frameworks_and_tools": [
+      "Docker", "Kubernetes", "Linux", "CI/CD", "PostgreSQL", "MySQL", "Redis", "Kafka", "RabbitMQ", "Spring Boot", "Django", "FastAPI"
+    ],
+    "concepts_and_methodologies": [
+      "System Design", "Microservices", "REST API", "gRPC", "Unit Testing", "Test Driven Development", "TDD", "Clean Code", "Design Patterns", "Concurrency", "Multithreading", "Agile", "Scrum"
+    ],
+    "bonus_skills": [
+      "AWS", "GCP", "Azure", "Terraform", "Monitoring", "Prometheus", "Grafana", "GraphQL"
+    ],
+    "experience_signals": [
+      "scalable", "optimized", "refactored", "latency", "throughput", "architected", "deployed", "automated", "production"
+    ]
+  },
+  "ai_engineer": {
+    "id": "ai_engineer",
+    "title": "AI Engineer",
+    "description": "Artificial Intelligence & Machine Learning Engineer focusing on deep learning, LLMs, NLP/CV, model deployment, and RAG pipelines.",
+    "core_skills": [
+      "Python", "PyTorch", "TensorFlow", "Scikit-Learn", "Machine Learning", "Deep Learning", "NumPy", "Pandas"
+    ],
+    "frameworks_and_tools": [
+      "Hugging Face", "Transformers", "LangChain", "LlamaIndex", "CUDA", "vLLM", "Triton", "ChromaDB", "Pinecone", "FAISS", "MLflow", "Weights & Biases", "Ollama"
+    ],
+    "concepts_and_methodologies": [
+      "Large Language Models", "LLM", "RAG", "Retrieval-Augmented Generation", "Fine-Tuning", "LoRA", "Prompt Engineering", "NLP", "Natural Language Processing", "Computer Vision", "Embeddings", "Vector Search", "Model Evaluation", "Quantization"
+    ],
+    "bonus_skills": [
+      "Docker", "Kubernetes", "FastAPI", "ONNX", "Ray", "Agentic Workflows", "Knowledge Graphs", "MLOps"
+    ],
+    "experience_signals": [
+      "accuracy", "f1-score", "perplexity", "inference latency", "fine-tuned", "pipeline", "hallucination", "retrieval", "benchmark"
+    ]
+  },
+  "data_analyst": {
+    "id": "data_analyst",
+    "title": "Data Analyst",
+    "description": "Analytics specialist driving business decisions through SQL querying, statistical data modeling, dashboards, and storytelling.",
+    "core_skills": [
+      "SQL", "Python", "R", "Excel", "Data Analysis", "Statistics", "Pandas", "NumPy"
+    ],
+    "frameworks_and_tools": [
+      "Tableau", "Power BI", "Looker", "Metabase", "BigQuery", "Snowflake", "PostgreSQL", "MySQL", "dbt", "Matplotlib", "Seaborn", "Jupyter"
+    ],
+    "concepts_and_methodologies": [
+      "Exploratory Data Analysis", "EDA", "A/B Testing", "Hypothesis Testing", "Data Cleaning", "Data Visualization", "KPIs", "Cohort Analysis", "Funnel Analysis", "Data Warehousing", "ETL", "Dashboarding"
+    ],
+    "bonus_skills": [
+      "Google Analytics", "Mixpanel", "Airflow", "Machine Learning basics", "Regression Analysis", "Time Series", "Business Intelligence"
+    ],
+    "experience_signals": [
+      "revenue", "churn", "insights", "retention", "conversion rate", "stakeholders", "reporting", "metrics", "dashboard"
+    ]
+  },
+  "web_development": {
+    "id": "web_development",
+    "title": "Web Development",
+    "description": "Full-stack or Frontend/Backend Web Engineer building responsive, performant, and secure web applications.",
+    "core_skills": [
+      "JavaScript", "TypeScript", "HTML5", "CSS3", "React", "Node.js", "Git"
+    ],
+    "frameworks_and_tools": [
+      "Next.js", "Vue.js", "Express", "Tailwind CSS", "Sass", "PostgreSQL", "MongoDB", "Vite", "Webpack", "Redux", "Zustand"
+    ],
+    "concepts_and_methodologies": [
+      "Responsive Design", "RESTful API", "GraphQL", "WebSockets", "Authentication", "JWT", "OAuth", "SEO", "Web Performance", "Core Web Vitals", "Cross-Browser Compatibility", "Accessibility", "WCAG"
+    ],
+    "bonus_skills": [
+      "Docker", "AWS", "Vercel", "Jest", "Playwright", "Cypress", "SSR", "Server-Side Rendering", "Microfrontends"
+    ],
+    "experience_signals": [
+      "responsive", "user experience", "UI/UX", "lighthouse score", "bundle size", "interactive", "client-side", "end-to-end"
+    ]
+  }
+}
