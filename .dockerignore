@@ -9,4 +9,13 @@ __pycache__/
 .venv/
 venv/
 .dockerignore
-docker-compose*   
+docker-compose*
+
+# 1. Block local environment files from being copied into the image build
+.env
+.env.*
+!.env.example
+
+# 2. Block OS-specific metadata files
+.DS_Store
+Thumbs.db
