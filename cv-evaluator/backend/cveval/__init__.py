@@ -1,0 +1,1 @@
+"""CVEvaluator Django project package."""

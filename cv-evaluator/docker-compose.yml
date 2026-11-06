@@ -29,6 +29,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cveval_user}:${POSTGRES_PASSWORD:-cveval_pass}@db:5432/${POSTGRES_DB:-cveval_db}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-cveval-dev-key-change-in-production}
+      DEBUG: ${DEBUG:-True}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_PROVIDER: ${AI_PROVIDER:-groq}
       AI_MODEL: ${AI_MODEL:-llama-3.1-8b-instant}

@@ -1,0 +1,182 @@
+{
+  "software_development": {
+    "id": "software_development",
+    "title": "Software Development",
+    "description": "General Software Engineer role focusing on system architecture, algorithms, backend/application design, and reliable software delivery.",
+    "core_skills": [
+      "Python", "Java", "C++", "C#", "Go", "Rust", "Data Structures", "Algorithms", "Object-Oriented Programming", "OOP", "Git"
+    ],
+    "frameworks_and_tools": [
+      "Docker", "Kubernetes", "Linux", "CI/CD", "PostgreSQL", "MySQL", "Redis", "Kafka", "RabbitMQ", "Spring Boot", "Django", "FastAPI"
+    ],
+    "concepts_and_methodologies": [
+      "System Design", "Microservices", "REST API", "gRPC", "Unit Testing", "Test Driven Development", "TDD", "Clean Code", "Design Patterns", "Concurrency", "Multithreading", "Agile", "Scrum"
+    ],
+    "bonus_skills": [
+      "AWS", "GCP", "Azure", "Terraform", "Monitoring", "Prometheus", "Grafana", "GraphQL"
+    ],
+    "experience_signals": [
+      "scalable", "optimized", "refactored", "latency", "throughput", "architected", "deployed", "automated", "production"
+    ]
+  },
+  "ai_engineer": {
+    "id": "ai_engineer",
+    "title": "AI Engineer",
+    "description": "Artificial Intelligence & Machine Learning Engineer focusing on deep learning, LLMs, NLP/CV, model deployment, and RAG pipelines.",
+    "core_skills": [
+      "Python", "PyTorch", "TensorFlow", "Scikit-Learn", "Machine Learning", "Deep Learning", "NumPy", "Pandas"
+    ],
+    "frameworks_and_tools": [
+      "Hugging Face", "Transformers", "LangChain", "LlamaIndex", "CUDA", "vLLM", "Triton", "ChromaDB", "Pinecone", "FAISS", "MLflow", "Weights & Biases", "Ollama"
+    ],
+    "concepts_and_methodologies": [
+      "Large Language Models", "LLM", "RAG", "Retrieval-Augmented Generation", "Fine-Tuning", "LoRA", "Prompt Engineering", "NLP", "Natural Language Processing", "Computer Vision", "Embeddings", "Vector Search", "Model Evaluation", "Quantization"
+    ],
+    "bonus_skills": [
+      "Docker", "Kubernetes", "FastAPI", "ONNX", "Ray", "Agentic Workflows", "Knowledge Graphs", "MLOps"
+    ],
+    "experience_signals": [
+      "accuracy", "f1-score", "perplexity", "inference latency", "fine-tuned", "pipeline", "hallucination", "retrieval", "benchmark"
+    ]
+  },
+  "data_analyst": {
+    "id": "data_analyst",
+    "title": "Data Analyst",
+    "description": "Analytics specialist driving business decisions through SQL querying, statistical data modeling, dashboards, and storytelling.",
+    "core_skills": [
+      "SQL", "Python", "R", "Excel", "Data Analysis", "Statistics", "Pandas", "NumPy"
+    ],
+    "frameworks_and_tools": [
+      "Tableau", "Power BI", "Looker", "Metabase", "BigQuery", "Snowflake", "PostgreSQL", "MySQL", "dbt", "Matplotlib", "Seaborn", "Jupyter"
+    ],
+    "concepts_and_methodologies": [
+      "Exploratory Data Analysis", "EDA", "A/B Testing", "Hypothesis Testing", "Data Cleaning", "Data Visualization", "KPIs", "Cohort Analysis", "Funnel Analysis", "Data Warehousing", "ETL", "Dashboarding"
+    ],
+    "bonus_skills": [
+      "Google Analytics", "Mixpanel", "Airflow", "Machine Learning basics", "Regression Analysis", "Time Series", "Business Intelligence"
+    ],
+    "experience_signals": [
+      "revenue", "churn", "insights", "retention", "conversion rate", "stakeholders", "reporting", "metrics", "dashboard"
+    ]
+  },
+  "web_development": {
+    "id": "web_development",
+    "title": "Web Development",
+    "description": "Full-stack or Frontend/Backend Web Engineer building responsive, performant, and secure web applications.",
+    "core_skills": [
+      "JavaScript", "TypeScript", "HTML5", "CSS3", "React", "Node.js", "Git"
+    ],
+    "frameworks_and_tools": [
+      "Next.js", "Vue.js", "Express", "Tailwind CSS", "Sass", "PostgreSQL", "MongoDB", "Vite", "Webpack", "Redux", "Zustand"
+    ],
+    "concepts_and_methodologies": [
+      "Responsive Design", "RESTful API", "GraphQL", "WebSockets", "Authentication", "JWT", "OAuth", "SEO", "Web Performance", "Core Web Vitals", "Cross-Browser Compatibility", "Accessibility", "WCAG"
+    ],
+    "bonus_skills": [
+      "Docker", "AWS", "Vercel", "Jest", "Playwright", "Cypress", "SSR", "Server-Side Rendering", "Microfrontends"
+    ],
+    "experience_signals": [
+      "responsive", "user experience", "UI/UX", "lighthouse score", "bundle size", "interactive", "client-side", "end-to-end"
+    ]
+  },
+  "devops_engineer": {
+    "id": "devops_engineer",
+    "title": "DevOps Engineer",
+    "description": "DevOps Engineer specializing in CI/CD pipelines, container orchestration, infrastructure as code, and site reliability.",
+    "core_skills": [
+      "Linux", "Bash", "Python", "Networking", "Git"
+    ],
+    "frameworks_and_tools": [
+      "Docker", "Kubernetes", "Terraform", "Ansible", "Helm", "Jenkins", "GitHub Actions", "Prometheus", "Grafana", "Nginx", "AWS", "GCP", "Azure"
+    ],
+    "concepts_and_methodologies": [
+      "CI/CD", "Infrastructure as Code", "GitOps", "Site Reliability Engineering", "SRE", "Monitoring", "Alerting", "Incident Response", "Container Orchestration", "Load Balancing", "Auto Scaling"
+    ],
+    "bonus_skills": [
+      "ArgoCD", "Istio", "Vault", "Datadog", "Pulumi"
+    ],
+    "experience_signals": [
+      "deployed", "automated", "reduced downtime", "scaled", "incident", "pipeline", "reliability"
+    ]
+  },
+  "cloud_engineer": {
+    "id": "cloud_engineer",
+    "title": "Cloud Engineer",
+    "description": "Cloud Engineer designing, deploying, and maintaining resilient, scalable, and cost-effective multi-cloud infrastructure.",
+    "core_skills": [
+      "AWS", "GCP", "Azure", "Python", "Linux", "Networking", "IAM"
+    ],
+    "frameworks_and_tools": [
+      "Terraform", "CloudFormation", "Pulumi", "Lambda", "S3", "EC2", "VPC", "RDS", "EKS", "GKE", "Cloud Storage"
+    ],
+    "concepts_and_methodologies": [
+      "Cloud Architecture", "Serverless", "Microservices", "Security", "Cost Optimization", "High Availability", "Disaster Recovery", "Multi-Cloud"
+    ],
+    "bonus_skills": [
+      "Kubernetes", "Docker", "CDN", "Edge Computing"
+    ],
+    "experience_signals": [
+      "migrated", "architected", "reduced cost", "provisioned", "deployed", "secured", "optimized"
+    ]
+  },
+  "cybersecurity_analyst": {
+    "id": "cybersecurity_analyst",
+    "title": "Cybersecurity Analyst",
+    "description": "Information Security Analyst protecting systems, identifying vulnerabilities, analyzing threats, and responding to security incidents.",
+    "core_skills": [
+      "Python", "Linux", "Networking", "TCP/IP", "Firewalls", "SIEM", "Security Analysis"
+    ],
+    "frameworks_and_tools": [
+      "Wireshark", "Nmap", "Metasploit", "Burp Suite", "Splunk", "QRadar", "Nessus", "Snort", "AWS Security Hub", "CrowdStrike"
+    ],
+    "concepts_and_methodologies": [
+      "Penetration Testing", "Threat Modeling", "Incident Response", "Vulnerability Assessment", "OWASP", "Zero Trust", "SOC", "MITRE ATT&CK", "Compliance", "GDPR", "ISO 27001"
+    ],
+    "bonus_skills": [
+      "Ethical Hacking", "CTF", "Bug Bounty", "Forensics", "Malware Analysis"
+    ],
+    "experience_signals": [
+      "identified", "mitigated", "secured", "detected", "investigated", "hardened", "assessed", "patched"
+    ]
+  },
+  "product_manager": {
+    "id": "product_manager",
+    "title": "Product Manager",
+    "description": "Product Manager leading product vision, strategy, discovery, agile execution, and cross-functional feature delivery.",
+    "core_skills": [
+      "Product Strategy", "Roadmapping", "User Research", "Data Analysis", "Stakeholder Management", "Agile", "Scrum"
+    ],
+    "frameworks_and_tools": [
+      "Jira", "Confluence", "Figma", "Mixpanel", "Google Analytics", "SQL", "Tableau", "Miro", "ProductBoard"
+    ],
+    "concepts_and_methodologies": [
+      "Product-Market Fit", "OKRs", "KPIs", "A/B Testing", "User Stories", "Sprint Planning", "Backlog Grooming", "Go-to-Market", "Competitive Analysis", "MVP"
+    ],
+    "bonus_skills": [
+      "Technical Background", "API Design", "Machine Learning basics", "Growth Hacking"
+    ],
+    "experience_signals": [
+      "launched", "grew", "increased retention", "reduced churn", "shipped", "prioritized", "aligned", "delivered"
+    ]
+  },
+  "machine_learning_engineer": {
+    "id": "machine_learning_engineer",
+    "title": "Machine Learning Engineer",
+    "description": "Machine Learning Engineer focused on end-to-end model development, distributed training, feature pipelines, and production MLOps.",
+    "core_skills": [
+      "Python", "PyTorch", "TensorFlow", "Machine Learning", "Deep Learning", "Mathematics", "Statistics", "Linear Algebra"
+    ],
+    "frameworks_and_tools": [
+      "Scikit-Learn", "Keras", "XGBoost", "LightGBM", "Pandas", "NumPy", "MLflow", "Kubeflow", "Airflow", "Spark", "Ray"
+    ],
+    "concepts_and_methodologies": [
+      "Model Training", "Hyperparameter Tuning", "Feature Engineering", "Cross-Validation", "Model Deployment", "MLOps", "A/B Testing Models", "Distributed Training", "Model Monitoring", "Data Pipelines"
+    ],
+    "bonus_skills": [
+      "Reinforcement Learning", "NLP", "Computer Vision", "CUDA", "Triton", "ONNX", "Knowledge Distillation"
+    ],
+    "experience_signals": [
+      "accuracy", "AUC", "F1-score", "deployed model", "reduced latency", "improved precision", "trained", "evaluated"
+    ]
+  }
+}
