@@ -1,6 +1,6 @@
 import re
 from typing import Dict, Any, List
-from .role_dataset import load_roles_criteria
+from .role_dataset import load_roles_criteria, KEYWORD_ALIASES
 
 WEAK_PHRASES = [
     "responsible for",
@@ -11,33 +11,47 @@ WEAK_PHRASES = [
     "hard worker",
     "detail oriented",
     "duties included",
+    "self starter",
+    "think outside the box",
+    "participated in",
 ]
 
-FILLER_WORDS = ["nice", "great", "excellent", "strong", "good"]
+FILLER_WORDS = ["nice", "great", "excellent", "strong", "good", "various", "multiple"]
 
 
 def count_keyword_occurrences(keyword: str, text: str) -> int:
     """
-    Counts occurrences of a keyword in text with regex support for programming languages.
+    Counts occurrences of a keyword in text with regex support for programming languages
+    and domain aliases.
     """
-    k_lower = keyword.lower()
-    if k_lower == "c++":
-        pattern = r'(?<![a-zA-Z0-9])c\+\+(?![a-zA-Z0-9])'
-    elif k_lower == "c#":
-        pattern = r'(?<![a-zA-Z0-9])c\#(?![a-zA-Z0-9])'
-    elif k_lower == "r":
-        pattern = r'(?<![a-zA-Z0-9])r(?![a-zA-Z0-9])'
-    elif k_lower == "go":
-        pattern = r'\b(golang|go\s+programming|go\s+language)\b|(?<![a-zA-Z0-9])go(?![a-zA-Z0-9])'
-    elif k_lower == "ci/cd":
-        pattern = r'\b(ci/cd|ci-cd|continuous\s+integration)\b'
-    elif k_lower == ".net":
-        pattern = r'(?<![a-zA-Z0-9])\.net\b'
-    else:
-        escaped = re.escape(keyword)
-        pattern = rf'\b{escaped}\b'
-        
-    return len(re.findall(pattern, text, re.IGNORECASE))
+    k_lower = keyword.lower().strip()
+    patterns_to_check = [keyword]
+
+    if k_lower in KEYWORD_ALIASES:
+        patterns_to_check = KEYWORD_ALIASES[k_lower]
+
+    total_count = 0
+    for pat in patterns_to_check:
+        p_lower = pat.lower().strip()
+        if p_lower == "c++":
+            regex = r'(?<![a-zA-Z0-9])c\+\+(?![a-zA-Z0-9])'
+        elif p_lower == "c#":
+            regex = r'(?<![a-zA-Z0-9])c\#(?![a-zA-Z0-9])'
+        elif p_lower == "r":
+            regex = r'(?<![a-zA-Z0-9])\bR\b(?![a-zA-Z0-9])'
+        elif p_lower == "go":
+            regex = r'\b(golang|go\s+programming|go\s+language)\b|(?<![a-zA-Z0-9])go(?![a-zA-Z0-9])'
+        elif p_lower == "ci/cd":
+            regex = r'\b(ci/cd|ci-cd|continuous\s+integration)\b'
+        elif p_lower == ".net":
+            regex = r'(?<![a-zA-Z0-9])\.net\b'
+        else:
+            escaped = re.escape(pat)
+            regex = rf'\b{escaped}\b'
+
+        total_count += len(re.findall(regex, text, re.IGNORECASE))
+
+    return total_count
 
 
 def analyze_keywords(text: str, role_id: str) -> Dict[str, Any]:
@@ -48,14 +62,12 @@ def analyze_keywords(text: str, role_id: str) -> Dict[str, Any]:
     criteria = load_roles_criteria()
     role = criteria.get(role_id)
     if not role:
-        # Fallback to software_development if unknown role
         role = criteria.get("software_development", list(criteria.values())[0])
 
     core_skills = role.get("core_skills", [])
     frameworks_and_tools = role.get("frameworks_and_tools", [])
     concepts = role.get("concepts_and_methodologies", [])
 
-    # Order preserved: core first, then tools, then concepts
     target_keywords: List[str] = []
     for k in core_skills + frameworks_and_tools + concepts:
         if k not in target_keywords:
@@ -105,4 +117,5 @@ def analyze_keywords(text: str, role_id: str) -> Dict[str, Any]:
         "weak_keywords": weak_keywords,
         "suggested_keywords": suggested_keywords,
         "weak_phrases": weak_phrases_found,
+        "overused_words": overused_found,
     }

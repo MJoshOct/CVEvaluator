@@ -1,40 +1,71 @@
 import React, { useState, useRef } from 'react';
+import {
+  IconMic,
+  IconFile,
+  IconEdit,
+  IconUpload,
+  IconRefresh,
+  IconCheck,
+  IconAlertTriangle,
+  IconCpu,
+  IconWrench,
+  IconUser,
+  IconLightbulb
+} from './Icons';
 
-const SAMPLE_CV_TEXT = `Alex Chen
+const SAMPLE_INTERVIEW_CVS = {
+  software_development: `Alex Chen
 alex.chen@email.com | +1 (555) 019-2834 | linkedin.com/in/alexchen-dev | github.com/alexchen
 
-PROFESSIONAL SUMMARY
-Results-driven Software Engineer with 3+ years of experience architecting distributed systems, backend microservices, and high-throughput APIs.
-
-TECHNICAL SKILLS
-- Languages: Python, Java, C++, Go, SQL
-- Technologies & Tools: Docker, Kubernetes, Linux, Git, CI/CD, PostgreSQL, Redis, Kafka
-- Concepts: System Design, OOP, Data Structures, Algorithms, Unit Testing, TDD, Agile/Scrum
-
 PROFESSIONAL EXPERIENCE
-Software Engineer | NexaTech Systems (2022 – Present)
+Senior Software Engineer | NexaTech Systems (2022 – Present)
 - Architected and deployed microservices in Go and Python serving 2M+ daily active users with 99.98% uptime.
 - Optimized database indexing and Redis caching, cutting P99 API response latency from 420ms to 85ms.
-- Implemented automated CI/CD pipelines with GitHub Actions and Docker, reducing deployment cycle times by 40%.`;
+- Implemented automated CI/CD pipelines with GitHub Actions and Docker, reducing deployment cycle times by 40%.
+
+Associate Software Developer | CloudBase Labs (2021 – 2022)
+- Built RESTful APIs using Java Spring Boot and PostgreSQL for enterprise client onboarding.
+- Authored unit and integration test suites using JUnit and PyTest, raising test coverage from 60% to 88%.`,
+
+  ai_engineer: `Maya Patel
+maya.patel@email.com | +1 (555) 432-8765 | github.com/mayapatel-ai | linkedin.com/in/mayapatel
+
+PROFESSIONAL EXPERIENCE
+AI Engineer | Synapse Intelligence (2023 – Present)
+- Engineered enterprise RAG pipeline using LangChain, ChromaDB, and fine-tuned Llama-3 models to parse 500k+ documents with 92% retrieval precision.
+- Fine-tuned transformer models using LoRA/QLoRA on proprietary domain datasets, reducing model hallucination by 34%.
+- Containerized model serving using FastAPI, vLLM, and Docker on NVIDIA GPU instances with sub-120ms token latency.`,
+
+  data_analyst: `Jordan Lee
+jordan.lee@email.com | +1 (555) 789-0123 | linkedin.com/in/jordanlee-analytics
+
+PROFESSIONAL EXPERIENCE
+Senior Data Analyst | RetailMetric Corp (2022 – Present)
+- Designed executive Tableau dashboards tracking $45M in omnichannel retail revenue and customer churn metrics.
+- Executed rigorous A/B testing frameworks and hypothesis testing for checkout redesign, elevating checkout conversion rate by 6.2%.
+- Optimized BigQuery SQL queries and automated ETL data cleansing scripts, reducing reporting refresh time by 65%.`,
+
+  web_development: `Samira Khan
+samira.khan@email.com | +1 (555) 321-9876 | github.com/samirak-web | linkedin.com/in/samirakhan
+
+PROFESSIONAL EXPERIENCE
+Full-Stack Developer | PixelCraft Studio (2022 – Present)
+- Engineered responsive SaaS web applications in React, TypeScript, and Tailwind CSS serving 150k monthly active users.
+- Built scalable Node.js/Express REST APIs with JWT authentication and PostgreSQL, ensuring secure session management.
+- Improved Core Web Vitals and Lighthouse performance score from 68 to 96 by implementing code splitting and image optimization.`
+};
 
 export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] }) {
-  const [cvMode, setCvMode] = useState('paste'); // 'upload' | 'paste'
-  const [cvFile, setCvFile] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('software_development');
+  const [cvMode, setCvMode] = useState('paste'); // 'paste' | 'upload'
   const [cvText, setCvText] = useState('');
-  const [selectedRole, setSelectedRole] = useState(roles[0]?.id || 'software_development');
-  const [result, setResult] = useState(null);
+  const [cvFile, setCvFile] = useState(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
   const [expandedQuestions, setExpandedQuestions] = useState({});
-  const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef(null);
-
-  const toggleQuestion = (id) => {
-    setExpandedQuestions((prev) => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -48,20 +79,24 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files?.[0]) {
       setCvFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setCvFile(e.target.files[0]);
     }
   };
 
   const handleLoadSample = () => {
     setCvMode('paste');
-    setCvText(SAMPLE_CV_TEXT);
+    setCvText(SAMPLE_INTERVIEW_CVS[selectedRole] || SAMPLE_INTERVIEW_CVS.software_development);
+  };
+
+  const toggleQuestion = (id) => {
+    setExpandedQuestions((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleSubmit = async (e) => {
@@ -69,11 +104,11 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
     setError(null);
 
     if (cvMode === 'upload' && !cvFile) {
-      setError('Please upload your CV document.');
+      setError('Please choose or drop a CV file first.');
       return;
     }
     if (cvMode === 'paste' && !cvText.trim()) {
-      setError('Please paste your CV text.');
+      setError('Please paste CV text to generate interview questions.');
       return;
     }
 
@@ -84,59 +119,52 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
       if (cvMode === 'upload') {
         const formData = new FormData();
         formData.append('file', cvFile);
-        formData.append('role', selectedRole);
-        if (apiKey) formData.append('api_key', apiKey.trim());
+        formData.append('target_role', selectedRole);
+        if (apiKey) formData.append('api_key', apiKey);
 
-        res = await fetch('/api/interview-prep', {
+        res = await fetch('/api/tools/interview-prep', {
           method: 'POST',
           body: formData,
-          headers: apiKey ? { 'X-AI-API-Key': apiKey.trim() } : {}
+          headers: apiKey ? { 'X-AI-API-Key': apiKey } : {}
         });
       } else {
-        res = await fetch('/api/interview-prep', {
+        res = await fetch('/api/tools/interview-prep', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(apiKey ? { 'X-AI-API-Key': apiKey.trim() } : {})
+            ...(apiKey ? { 'X-AI-API-Key': apiKey } : {})
           },
           body: JSON.stringify({
             cv_text: cvText.trim(),
-            role: selectedRole,
-            api_key: apiKey ? apiKey.trim() : undefined
+            target_role: selectedRole,
+            api_key: apiKey
           })
         });
       }
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ detail: 'Failed to generate interview questions.' }));
-        throw new Error(errData.error || errData.detail || 'Interview prep request failed.');
+        const err = await res.json().catch(() => ({ detail: 'Failed to generate interview prep questions.' }));
+        throw new Error(err.error || err.detail || 'Interview preparation service failed.');
       }
 
       const data = await res.json();
       setResult(data);
-      // Auto-expand the first question of each category for convenience
-      setExpandedQuestions({
-        'tech-0': true,
-        'proj-0': true,
-        'hr-0': true
-      });
     } catch (err) {
       console.error(err);
-      setError(err.message || 'An error occurred while generating interview questions.');
+      setError(err.message || 'An error occurred while generating interview prep questions.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Normalize questions from result
-  const technicalQuestions = result?.technical || result?.technical_questions || [];
-  const projectQuestions = result?.project_based || result?.project_questions || [];
-  const hrQuestions = result?.behavioral || result?.hr || result?.behavioral_questions || [];
+  const technicalQuestions = result?.technical_questions || result?.technical || [];
+  const projectQuestions = result?.project_questions || result?.project_deep_dive || [];
+  const hrQuestions = result?.behavioral_questions || result?.hr_questions || result?.behavioral || [];
 
   const getDifficultyClass = (diff) => {
     const text = (diff || '').toLowerCase();
-    if (text.includes('easy')) return 'diff-easy';
-    if (text.includes('hard')) return 'diff-hard';
+    if (text.includes('hard') || text.includes('advanced')) return 'diff-hard';
+    if (text.includes('easy') || text.includes('junior')) return 'diff-easy';
     return 'diff-medium';
   };
 
@@ -145,16 +173,17 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
       <div className="card">
         <div className="card-title">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🎤</span>
-            <span>AI Interview Preparation & Mock Questions</span>
+            <IconMic width={16} height={16} />
+            <span>AI Interview Preparation &amp; Mock Questions</span>
           </div>
           <button
             type="button"
             className="btn-secondary"
             onClick={handleLoadSample}
-            style={{ fontSize: '0.78rem' }}
+            style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            ⚡ Load Sample CV
+            <IconFile width={13} height={13} />
+            Load Sample CV
           </button>
         </div>
 
@@ -184,15 +213,19 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
               type="button"
               className={`tab-btn ${cvMode === 'paste' ? 'active' : ''}`}
               onClick={() => setCvMode('paste')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              ✏️ Paste CV Text
+              <IconEdit width={13} height={13} />
+              Paste CV Text
             </button>
             <button
               type="button"
               className={`tab-btn ${cvMode === 'upload' ? 'active' : ''}`}
               onClick={() => setCvMode('upload')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              📁 Upload CV File
+              <IconUpload width={13} height={13} />
+              Upload CV File
             </button>
           </div>
 
@@ -214,19 +247,26 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
                     accept=".pdf,.docx,.doc,.txt"
                     onChange={handleFileSelect}
                   />
-                  <div className="dropzone-icon">📄</div>
+                  <div className="dropzone-icon">
+                    <IconUpload width={32} height={32} style={{ color: 'var(--text-muted)' }} />
+                  </div>
                   <div className="dropzone-text">Click to choose or drop your CV</div>
                   <div className="dropzone-hint">Supports PDF, DOCX, TXT</div>
                 </div>
               ) : (
                 <div className="file-selected-card">
                   <div className="file-info-col">
-                    <div className="file-type-icon">📄</div>
+                    <div className="file-type-icon">
+                      <IconFile width={20} height={20} />
+                    </div>
                     <div className="file-details">
                       <div className="file-name" title={cvFile.name}>{cvFile.name}</div>
                       <div className="file-meta">
                         <span className="file-size">{(cvFile.size / 1024).toFixed(1)} KB</span>
-                        <span className="file-ready-tag">✓ Ready</span>
+                        <span className="file-ready-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconCheck width={11} height={11} />
+                          Ready
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -235,7 +275,8 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
                     className="btn-change-file"
                     onClick={() => setCvFile(null)}
                   >
-                    🔄 Change
+                    <IconRefresh width={13} height={13} style={{ marginRight: 4 }} />
+                    Change
                   </button>
                 </div>
               )}
@@ -244,8 +285,7 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
             <div style={{ marginBottom: 16 }}>
               <textarea
                 className="cv-textarea"
-                style={{ height: 180 }}
-                placeholder="Paste candidate's CV here to extract tailored technical, project-specific, and behavioral interview questions..."
+                placeholder="Paste candidate's CV text here to generate tailored interview questions..."
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
               />
@@ -253,10 +293,13 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           )}
 
           {/* API Key Box */}
-          <div className="api-key-box" style={{ marginBottom: 16 }}>
+          <div className="api-key-box" style={{ marginTop: 0, marginBottom: 16 }}>
             <div className="api-key-header">
               <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
-              <span>{apiKey ? '✓ Key Provided' : 'Optional (Free Groq / Fallback)'}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {apiKey && <IconCheck width={11} height={11} />}
+                {apiKey ? 'Key Provided' : 'Optional (Free Groq / Fallback)'}
+              </span>
             </div>
             <input
               type="password"
@@ -270,26 +313,37 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           {error && (
             <div
               style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
+                background: 'var(--red-tint)',
+                border: '1px solid var(--red-border)',
+                color: '#991b1b',
                 padding: '10px 14px',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.84rem',
-                marginBottom: 16
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}
             >
-              ⚠️ {error}
+              <IconAlertTriangle width={15} height={15} />
+              <span>{error}</span>
             </div>
           )}
 
           <button
             type="submit"
             className="btn-primary"
-            style={{ width: '100%' }}
+            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             disabled={loading}
           >
-            {loading ? 'Synthesizing Tailored Interview Questions...' : '🎤 Generate Interview Questions'}
+            {loading ? (
+              <span>Synthesizing Tailored Interview Questions...</span>
+            ) : (
+              <>
+                <IconMic width={15} height={15} />
+                <span>Generate Interview Questions</span>
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -297,9 +351,11 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
       {/* Loading animation */}
       {loading && (
         <div className="card empty-state">
-          <div className="empty-state-icon" style={{ animation: 'pulse 1.5s infinite' }}>🎤</div>
+          <div className="empty-state-icon">
+            <IconMic width={42} height={42} style={{ color: 'var(--blue)', animation: 'pulse 1.5s infinite' }} />
+          </div>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: 8 }}>
-            Curating Interview Questions & Model Answers...
+            Curating Interview Questions &amp; Model Answers...
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Analyzing candidate's listed projects, verifying technology depth, and crafting rigorous interview prompts.
@@ -314,7 +370,10 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           {technicalQuestions.length > 0 && (
             <div className="card interview-category">
               <div className="interview-category-title">
-                <span>💻 Technical Depth & System Architecture</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconCpu width={15} height={15} />
+                  Technical Depth &amp; System Architecture
+                </span>
                 <span className="tag tag-neutral" style={{ fontSize: '0.72rem' }}>
                   {technicalQuestions.length} Questions
                 </span>
@@ -331,7 +390,7 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
                   return (
                     <div key={key} className="interview-question-card">
                       <div className="interview-q-header" onClick={() => toggleQuestion(key)}>
-                        <span style={{ color: 'var(--accent-blue)', fontSize: '0.8rem', marginRight: 4 }}>
+                        <span style={{ color: 'var(--blue)', fontSize: '0.8rem', marginRight: 4 }}>
                           {isExpanded ? '▼' : '▶'}
                         </span>
                         <div className="interview-q-text">{qText}</div>
@@ -342,8 +401,9 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
 
                       {isExpanded && answer && (
                         <div className="interview-answer">
-                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--accent-blue)', marginBottom: 4 }}>
-                            💡 Model Answer / Evaluator Key:
+                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--blue)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <IconLightbulb width={13} height={13} />
+                            Model Answer / Evaluator Key:
                           </div>
                           <div>{answer}</div>
                         </div>
@@ -359,7 +419,10 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           {projectQuestions.length > 0 && (
             <div className="card interview-category">
               <div className="interview-category-title">
-                <span>🛠️ Project-Based & Architecture Deep Dives</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconWrench width={15} height={15} />
+                  Project-Based &amp; Architecture Deep Dives
+                </span>
                 <span className="tag tag-neutral" style={{ fontSize: '0.72rem' }}>
                   {projectQuestions.length} Questions
                 </span>
@@ -375,7 +438,7 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
                   return (
                     <div key={key} className="interview-question-card">
                       <div className="interview-q-header" onClick={() => toggleQuestion(key)}>
-                        <span style={{ color: 'var(--accent-blue)', fontSize: '0.8rem', marginRight: 4 }}>
+                        <span style={{ color: 'var(--blue)', fontSize: '0.8rem', marginRight: 4 }}>
                           {isExpanded ? '▼' : '▶'}
                         </span>
                         <div className="interview-q-text">{qText}</div>
@@ -383,8 +446,9 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
 
                       {isExpanded && answer && (
                         <div className="interview-answer">
-                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: '#4ade80', marginBottom: 4 }}>
-                            💡 Model STAR Response Framework:
+                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: '#16a34a', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <IconLightbulb width={13} height={13} />
+                            Model STAR Response Framework:
                           </div>
                           <div>{answer}</div>
                         </div>
@@ -400,7 +464,10 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           {hrQuestions.length > 0 && (
             <div className="card interview-category">
               <div className="interview-category-title">
-                <span>🤝 HR & Behavioral STAR Scenarios</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IconUser width={15} height={15} />
+                  HR &amp; Behavioral STAR Scenarios
+                </span>
                 <span className="tag tag-neutral" style={{ fontSize: '0.72rem' }}>
                   {hrQuestions.length} Questions
                 </span>
@@ -416,7 +483,7 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
                   return (
                     <div key={key} className="interview-question-card">
                       <div className="interview-q-header" onClick={() => toggleQuestion(key)}>
-                        <span style={{ color: 'var(--accent-blue)', fontSize: '0.8rem', marginRight: 4 }}>
+                        <span style={{ color: 'var(--blue)', fontSize: '0.8rem', marginRight: 4 }}>
                           {isExpanded ? '▼' : '▶'}
                         </span>
                         <div className="interview-q-text">{qText}</div>
@@ -424,8 +491,9 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
 
                       {isExpanded && answer && (
                         <div className="interview-answer">
-                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: '#fbbf24', marginBottom: 4 }}>
-                            💡 Behavioral Assessment Guide:
+                          <div style={{ fontWeight: 600, fontSize: '0.78rem', color: '#b45309', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <IconLightbulb width={13} height={13} />
+                            Behavioral Assessment Guide:
                           </div>
                           <div>{answer}</div>
                         </div>

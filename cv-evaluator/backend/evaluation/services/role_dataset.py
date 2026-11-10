@@ -5,40 +5,82 @@ from typing import Dict, Any, List
 
 CRITERIA_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'roles_criteria.json')
 
+KEYWORD_ALIASES: Dict[str, List[str]] = {
+    "kubernetes": ["k8s", "kubernetes"],
+    "postgresql": ["postgres", "postgresql", "psql"],
+    "javascript": ["js", "javascript"],
+    "typescript": ["ts", "typescript"],
+    "python": ["python", "python3"],
+    "machine learning": ["ml", "machine learning"],
+    "deep learning": ["dl", "deep learning"],
+    "natural language processing": ["nlp", "natural language processing"],
+    "object-oriented programming": ["oop", "object-oriented programming", "object oriented"],
+    "ci/cd": ["ci/cd", "ci-cd", "continuous integration", "continuous deployment"],
+    "test driven development": ["tdd", "test driven development", "test-driven development"],
+    "system design": ["system design", "distributed systems", "software architecture"],
+    "rest api": ["rest api", "restful", "rest apis", "restful api"],
+    "large language models": ["llm", "llms", "large language models"],
+    "retrieval-augmented generation": ["rag", "retrieval-augmented generation", "retrieval augmented generation"],
+    "exploratory data analysis": ["eda", "exploratory data analysis"],
+    "aws": ["aws", "amazon web services"],
+    "gcp": ["gcp", "google cloud platform", "google cloud"],
+    "azure": ["azure", "microsoft azure"],
+    "docker": ["docker", "containerization", "containers"],
+    "data structures": ["data structures", "dsa"],
+    "algorithms": ["algorithms", "algo"],
+}
+
+
 def load_roles_criteria() -> Dict[str, Any]:
     with open(CRITERIA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def match_keyword(keyword: str, text: str) -> bool:
     """
-    Case-insensitive regex matching handling special characters like C++, C#, .NET.
+    Case-insensitive regex matching with special handling for C++, C#, .NET,
+    single letter languages, and industry abbreviations.
     """
-    # Special escapes for programming language names with symbols
-    if keyword.lower() == "c++":
-        pattern = r'(?<![a-zA-Z0-9])c\+\+(?![a-zA-Z0-9])'
-    elif keyword.lower() == "c#":
-        pattern = r'(?<![a-zA-Z0-9])c\#(?![a-zA-Z0-9])'
-    elif keyword.lower() == "r":
-        pattern = r'(?<![a-zA-Z0-9])r(?![a-zA-Z0-9])'
-    elif keyword.lower() == "go":
-        pattern = r'\b(golang|go\s+programming|go\s+language)\b|(?<![a-zA-Z0-9])go(?![a-zA-Z0-9])'
-    elif keyword.lower() == "ci/cd":
-        pattern = r'\b(ci/cd|ci-cd|continuous\s+integration)\b'
-    elif keyword.lower() == ".net":
-        pattern = r'(?<![a-zA-Z0-9])\.net\b'
+    k_lower = keyword.lower().strip()
+
+    # Check alias dictionary first
+    if k_lower in KEYWORD_ALIASES:
+        for alias in KEYWORD_ALIASES[k_lower]:
+            if match_single_pattern(alias, text):
+                return True
+
+    return match_single_pattern(keyword, text)
+
+
+def match_single_pattern(pattern_str: str, text: str) -> bool:
+    p_lower = pattern_str.lower().strip()
+
+    if p_lower == "c++":
+        pat = r'(?<![a-zA-Z0-9])c\+\+(?![a-zA-Z0-9])'
+    elif p_lower == "c#":
+        pat = r'(?<![a-zA-Z0-9])c\#(?![a-zA-Z0-9])'
+    elif p_lower == "r":
+        pat = r'(?<![a-zA-Z0-9])\bR\b(?![a-zA-Z0-9])'
+    elif p_lower == "go":
+        pat = r'\b(golang|go\s+programming|go\s+language)\b|(?<![a-zA-Z0-9])go(?![a-zA-Z0-9])'
+    elif p_lower == ".net":
+        pat = r'(?<![a-zA-Z0-9])\.net\b'
+    elif p_lower == "ci/cd":
+        pat = r'\b(ci/cd|ci-cd|continuous\s+integration)\b'
     else:
-        escaped = re.escape(keyword)
-        pattern = rf'\b{escaped}\b'
-        
-    return bool(re.search(pattern, text, re.IGNORECASE))
+        escaped = re.escape(pattern_str)
+        pat = rf'\b{escaped}\b'
+
+    return bool(re.search(pat, text, re.IGNORECASE))
+
 
 def evaluate_against_role(text: str, role_id: str) -> Dict[str, Any]:
     criteria = load_roles_criteria()
     if role_id not in criteria:
         raise ValueError(f"Unknown role ID: {role_id}. Supported roles: {list(criteria.keys())}")
-        
+
     role = criteria[role_id]
-    
+
     core_skills = role.get("core_skills", [])
     tools = role.get("frameworks_and_tools", [])
     concepts = role.get("concepts_and_methodologies", [])

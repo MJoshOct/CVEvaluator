@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconCheck, IconSearch } from './Icons';
 
 export default function RoleScorecard({ evaluation }) {
   if (!evaluation) return null;
@@ -19,8 +20,8 @@ export default function RoleScorecard({ evaluation }) {
   return (
     <div className="card">
       <div className="card-title">
-        <span>Step 2: Predefined Dataset Role Match</span>
-        <span style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', fontWeight: 600 }}>
+        <span>Step 2a: Rubric &amp; Domain Alignment</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--blue)', fontWeight: 600 }}>
           {role_title}
         </span>
       </div>
@@ -47,27 +48,27 @@ export default function RoleScorecard({ evaluation }) {
       {/* Breakdown categories */}
       {breakdown_percentages && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
-          <div style={{ background: 'var(--bg-primary)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Core Skills</div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--blue)' }}>
               {breakdown_percentages.core_skills}%
             </div>
           </div>
-          <div style={{ background: 'var(--bg-primary)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Tools / Stacks</div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--blue)' }}>
               {breakdown_percentages.frameworks_and_tools}%
             </div>
           </div>
-          <div style={{ background: 'var(--bg-primary)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Concepts / Domain</div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--blue)' }}>
               {breakdown_percentages.concepts_and_methodologies}%
             </div>
           </div>
-          <div style={{ background: 'var(--bg-primary)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Action Signals</div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--blue)' }}>
               {breakdown_percentages.experience_signals}%
             </div>
           </div>
@@ -76,16 +77,25 @@ export default function RoleScorecard({ evaluation }) {
 
       {/* Matched vs Missing Skills */}
       <div className="section-block">
-        <div className="section-label">Matched Skills & Tools Found in CV</div>
+        <div className="section-label">Matched Skills &amp; Tools Found in CV</div>
         <div className="tag-list">
           {core_skills_matched.map((s, idx) => (
-            <span key={`core-${idx}`} className="tag tag-success">✓ {s}</span>
+            <span key={`core-${idx}`} className="tag tag-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconCheck width={12} height={12} />
+              {s}
+            </span>
           ))}
           {tools_matched.map((t, idx) => (
-            <span key={`tool-${idx}`} className="tag tag-success">✓ {t}</span>
+            <span key={`tool-${idx}`} className="tag tag-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconCheck width={12} height={12} />
+              {t}
+            </span>
           ))}
           {concepts_matched.map((c, idx) => (
-            <span key={`concept-${idx}`} className="tag tag-success">✓ {c}</span>
+            <span key={`concept-${idx}`} className="tag tag-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconCheck width={12} height={12} />
+              {c}
+            </span>
           ))}
           {core_skills_matched.length === 0 && tools_matched.length === 0 && (
             <span className="tag tag-neutral">No exact target skills matched yet</span>
@@ -110,7 +120,10 @@ export default function RoleScorecard({ evaluation }) {
           <div className="section-label">Impact Signals Detected</div>
           <div className="tag-list">
             {experience_signals_found.map((sig, idx) => (
-              <span key={idx} className="tag tag-neutral">🔍 "{sig}"</span>
+              <span key={idx} className="tag tag-neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <IconSearch width={11} height={11} />
+                "{sig}"
+              </span>
             ))}
           </div>
         </div>

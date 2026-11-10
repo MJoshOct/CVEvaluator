@@ -1,4 +1,12 @@
 import React from 'react';
+import {
+  IconCpu,
+  IconFile,
+  IconCheck,
+  IconX,
+  IconAlertTriangle,
+  IconLightbulb
+} from './Icons';
 
 export default function ATSReport({ atsData }) {
   if (!atsData) return null;
@@ -17,13 +25,13 @@ export default function ATSReport({ atsData }) {
   const score = Math.round(Number(ats_score) || 0);
 
   // Score color logic
-  let scoreColor = '#f87171'; // red < 60
+  let scoreColor = '#dc2626'; // red < 60
   let gradeBadgeClass = 'tag-danger';
   if (score >= 80) {
-    scoreColor = '#4ade80'; // green >= 80
+    scoreColor = '#16a34a'; // green >= 80
     gradeBadgeClass = 'tag-success';
   } else if (score >= 60) {
-    scoreColor = '#fbbf24'; // yellow >= 60
+    scoreColor = '#d97706'; // yellow >= 60
     gradeBadgeClass = 'tag-warning';
   }
 
@@ -36,7 +44,7 @@ export default function ATSReport({ atsData }) {
     <div className="card">
       <div className="card-title">
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>🤖</span>
+          <IconCpu width={16} height={16} />
           <span>Step 1b: ATS Compatibility Score</span>
         </span>
         <span className={`tag ${gradeBadgeClass}`} style={{ fontSize: '0.8rem', padding: '3px 10px' }}>
@@ -47,36 +55,41 @@ export default function ATSReport({ atsData }) {
       {/* Top Gauge & Metrics Row */}
       <div className="ats-gauge-wrap">
         <div className="ats-circle">
-          <svg viewBox="0 0 100 100">
+          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
             <circle
-              className="bg-circle"
               cx="50"
               cy="50"
               r={radius}
+              stroke="var(--border-color)"
+              strokeWidth="8"
+              fill="transparent"
             />
             <circle
-              className="progress-circle"
               cx="50"
               cy="50"
               r={radius}
               stroke={scoreColor}
+              strokeWidth="8"
+              fill="transparent"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.8s ease' }}
             />
           </svg>
           <div className="ats-score-text">
-            <span className="ats-score-number" style={{ color: scoreColor }}>
+            <span style={{ color: scoreColor, fontWeight: 800, fontSize: '1.4rem', fontFamily: 'var(--font-mono)' }}>
               {score}
             </span>
             <span className="ats-grade">{ats_grade}</span>
           </div>
         </div>
 
-        <div className="ats-info-col">
-          <div className="ats-info-title">
+        <div className="ats-info-col" style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)', marginBottom: 4 }}>
             Applicant Tracking System Readiness
           </div>
-          <div className="ats-info-desc">
+          <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             {score >= 80
               ? 'Your CV adheres strongly to ATS parsing conventions, section layouts, and keyword structure.'
               : score >= 60
@@ -84,9 +97,9 @@ export default function ATSReport({ atsData }) {
               : 'Your resume may encounter parsing errors or low algorithmic ranking in automated screening systems.'}
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <span>📄 Word Count: <strong style={{ color: 'var(--text-main)' }}>{word_count}</strong></span>
-            <span>📑 Sections Found: <strong style={{ color: '#4ade80' }}>{detected_sections.length}</strong></span>
-            <span>⚠️ Issues: <strong style={{ color: formatting_issues.length > 0 ? '#f87171' : '#4ade80' }}>{formatting_issues.length}</strong></span>
+            <span>Word Count: <strong style={{ color: 'var(--text-main)' }}>{word_count}</strong></span>
+            <span>Sections Found: <strong style={{ color: '#16a34a' }}>{detected_sections.length}</strong></span>
+            <span>Issues: <strong style={{ color: formatting_issues.length > 0 ? '#dc2626' : '#16a34a' }}>{formatting_issues.length}</strong></span>
           </div>
         </div>
       </div>
@@ -96,13 +109,15 @@ export default function ATSReport({ atsData }) {
         <div className="section-label">ATS Section Hierarchy Detection</div>
         <div className="tag-list">
           {detected_sections.map((sec, idx) => (
-            <span key={`detected-${idx}`} className="tag tag-success">
-              ✓ {sec}
+            <span key={`detected-${idx}`} className="tag tag-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconCheck width={12} height={12} />
+              {sec}
             </span>
           ))}
           {missing_sections.map((sec, idx) => (
-            <span key={`missing-${idx}`} className="tag tag-danger">
-              ✗ Missing: {sec}
+            <span key={`missing-${idx}`} className="tag tag-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <IconX width={12} height={12} />
+              Missing: {sec}
             </span>
           ))}
           {detected_sections.length === 0 && missing_sections.length === 0 && (
@@ -114,7 +129,7 @@ export default function ATSReport({ atsData }) {
       {/* Formatting Issues */}
       {formatting_issues.length > 0 && (
         <div className="section-block">
-          <div className="section-label" style={{ color: '#f87171' }}>
+          <div className="section-label" style={{ color: '#dc2626' }}>
             Formatting & Parsing Warnings ({formatting_issues.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -122,18 +137,18 @@ export default function ATSReport({ atsData }) {
               <div
                 key={`issue-${idx}`}
                 style={{
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.22)',
+                  background: 'var(--red-tint)',
+                  border: '1px solid var(--red-border)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '10px 14px',
-                  fontSize: '0.84rem',
-                  color: '#fca5a5',
+                  fontSize: '0.85rem',
+                  color: '#991b1b',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: 10
                 }}
               >
-                <span>⚠️</span>
+                <IconAlertTriangle width={15} height={15} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span style={{ flex: 1, lineHeight: 1.5 }}>{issue}</span>
               </div>
             ))}
@@ -144,7 +159,7 @@ export default function ATSReport({ atsData }) {
       {/* Weak Phrases Found */}
       {weak_phrases_found.length > 0 && (
         <div className="section-block">
-          <div className="section-label" style={{ color: '#fbbf24' }}>
+          <div className="section-label" style={{ color: '#b45309' }}>
             Weak / Passive Phrases Detected
           </div>
           <div className="tag-list" style={{ marginBottom: 6 }}>
@@ -154,7 +169,7 @@ export default function ATSReport({ atsData }) {
               </span>
             ))}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Tip: Replace passive responsibilities with quantified outcomes and active verbs (e.g., "Spearheaded", "Engineered", "Reduced").
           </p>
         </div>
@@ -163,7 +178,7 @@ export default function ATSReport({ atsData }) {
       {/* ATS Tips */}
       {ats_tips.length > 0 && (
         <div className="section-block" style={{ marginBottom: 0 }}>
-          <div className="section-label" style={{ color: 'var(--accent-blue)' }}>
+          <div className="section-label" style={{ color: 'var(--blue)' }}>
             Actionable ATS Optimization Tips
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -171,18 +186,18 @@ export default function ATSReport({ atsData }) {
               <div
                 key={`tip-${idx}`}
                 style={{
-                  background: 'rgba(56, 189, 248, 0.07)',
-                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                  background: 'var(--blue-tint)',
+                  border: '1px solid rgba(37, 99, 235, 0.2)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '10px 14px',
-                  fontSize: '0.84rem',
-                  color: '#bae6fd',
+                  fontSize: '0.85rem',
+                  color: '#1e40af',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: 10
                 }}
               >
-                <span>💡</span>
+                <IconLightbulb width={15} height={15} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span style={{ flex: 1, lineHeight: 1.5 }}>{tip}</span>
               </div>
             ))}

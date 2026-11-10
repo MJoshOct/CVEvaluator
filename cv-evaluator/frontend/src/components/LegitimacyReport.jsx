@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconCheck, IconX, IconAlertTriangle } from './Icons';
 
 export default function LegitimacyReport({ legitimacy }) {
   if (!legitimacy) return null;
@@ -17,9 +18,10 @@ export default function LegitimacyReport({ legitimacy }) {
         background: is_legitimate ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
         border: `1px solid ${is_legitimate ? 'var(--green-border)' : 'var(--red-border)'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '1.4rem', flexShrink: 0,
+        flexShrink: 0,
+        color: is_legitimate ? 'var(--green)' : 'var(--red)'
       }}>
-        {is_legitimate ? '✅' : '❌'}
+        {is_legitimate ? <IconCheck width={22} height={22} /> : <IconX width={22} height={22} />}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -41,7 +43,7 @@ export default function LegitimacyReport({ legitimacy }) {
             {word_count && (
               <span style={{
                 fontSize: '0.75rem', color: 'var(--text-muted)',
-                background: 'rgba(255,255,255,0.04)',
+                background: 'var(--bg-primary)',
                 padding: '2px 8px', borderRadius: 'var(--radius-pill)',
                 border: '1px solid var(--border-color)',
               }}>
@@ -62,10 +64,16 @@ export default function LegitimacyReport({ legitimacy }) {
         {(detected_sections.length > 0 || missing_sections.length > 0) && (
           <div className="tag-list">
             {detected_sections.map((sec, i) => (
-              <span key={i} className="tag tag-success">✓ {sec}</span>
+              <span key={i} className="tag tag-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <IconCheck width={12} height={12} />
+                {sec}
+              </span>
             ))}
             {missing_sections.map((sec, i) => (
-              <span key={i} className="tag tag-danger">✗ {sec}</span>
+              <span key={i} className="tag tag-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <IconX width={12} height={12} />
+                {sec}
+              </span>
             ))}
           </div>
         )}
@@ -75,7 +83,7 @@ export default function LegitimacyReport({ legitimacy }) {
           <div style={{ marginTop: 10 }}>
             {notes.map((n, i) => (
               <div key={i} className="tip-box warning" style={{ marginBottom: 4 }}>
-                <span>⚠</span>
+                <IconAlertTriangle width={14} height={14} style={{ flexShrink: 0 }} />
                 <span>{n}</span>
               </div>
             ))}

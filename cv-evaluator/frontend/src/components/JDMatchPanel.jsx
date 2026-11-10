@@ -1,4 +1,15 @@
 import React, { useState, useRef } from 'react';
+import {
+  IconTarget,
+  IconFile,
+  IconEdit,
+  IconUpload,
+  IconRefresh,
+  IconCheck,
+  IconX,
+  IconAlertTriangle,
+  IconSparkles
+} from './Icons';
 
 const SAMPLE_JD = `Senior Software Engineer (Full-Stack & Cloud)
 
@@ -160,16 +171,17 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
       <div className="card">
         <div className="card-title">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🎯</span>
-            <span>Job Description Matcher & Compatibility Analyzer</span>
+            <IconTarget width={16} height={16} />
+            <span>Job Description Matcher &amp; Compatibility Analyzer</span>
           </div>
           <button
             type="button"
             className="btn-secondary"
             onClick={handleLoadSample}
-            style={{ fontSize: '0.78rem' }}
+            style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            ⚡ Load Sample CV & JD
+            <IconFile width={13} height={13} />
+            Load Sample CV &amp; JD
           </button>
         </div>
 
@@ -183,18 +195,20 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                   <button
                     type="button"
                     className={`tab-btn ${cvMode === 'paste' ? 'active' : ''}`}
-                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     onClick={() => setCvMode('paste')}
                   >
-                    ✏️ Text
+                    <IconEdit width={12} height={12} />
+                    Text
                   </button>
                   <button
                     type="button"
                     className={`tab-btn ${cvMode === 'upload' ? 'active' : ''}`}
-                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     onClick={() => setCvMode('upload')}
                   >
-                    📁 File
+                    <IconUpload width={12} height={12} />
+                    File
                   </button>
                 </div>
               </div>
@@ -217,19 +231,26 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                         accept=".pdf,.docx,.doc,.txt"
                         onChange={handleFileSelect}
                       />
-                      <div className="dropzone-icon">📄</div>
+                      <div className="dropzone-icon">
+                        <IconUpload width={32} height={32} style={{ color: 'var(--text-muted)' }} />
+                      </div>
                       <div className="dropzone-text">Upload Candidate CV</div>
                       <div className="dropzone-hint">PDF, DOCX, or TXT</div>
                     </div>
                   ) : (
                     <div className="file-selected-card" style={{ height: 240, alignItems: 'center' }}>
                       <div className="file-info-col">
-                        <div className="file-type-icon">📄</div>
+                        <div className="file-type-icon">
+                          <IconFile width={20} height={20} />
+                        </div>
                         <div className="file-details">
                           <div className="file-name" title={cvFile.name}>{cvFile.name}</div>
                           <div className="file-meta">
                             <span className="file-size">{(cvFile.size / 1024).toFixed(1)} KB</span>
-                            <span className="file-ready-tag">✓ Ready</span>
+                            <span className="file-ready-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <IconCheck width={11} height={11} />
+                              Ready
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -238,7 +259,8 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                         className="btn-change-file"
                         onClick={() => setCvFile(null)}
                       >
-                        🔄 Change
+                        <IconRefresh width={13} height={13} style={{ marginRight: 4 }} />
+                        Change
                       </button>
                     </div>
                   )}
@@ -271,7 +293,10 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
           <div className="api-key-box" style={{ marginTop: 0, marginBottom: 16 }}>
             <div className="api-key-header">
               <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
-              <span>{apiKey ? '✓ Key Provided' : 'Optional (Fallback heuristics run if omitted)'}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {apiKey && <IconCheck width={11} height={11} />}
+                {apiKey ? 'Key Provided' : 'Optional (Fallback heuristics run if omitted)'}
+              </span>
             </div>
             <input
               type="password"
@@ -291,20 +316,31 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                 padding: '10px 14px',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.84rem',
-                marginBottom: 16
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}
             >
-              ⚠️ {error}
+              <IconAlertTriangle width={15} height={15} />
+              <span>{error}</span>
             </div>
           )}
 
           <button
             type="submit"
             className="btn-primary"
-            style={{ width: '100%' }}
+            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             disabled={loading}
           >
-            {loading ? 'Analyzing Job Compatibility...' : '🎯 Analyze Match'}
+            {loading ? (
+              <span>Analyzing Job Compatibility...</span>
+            ) : (
+              <>
+                <IconTarget width={15} height={15} />
+                <span>Analyze Match</span>
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -312,7 +348,9 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
       {/* Loading state indicator */}
       {loading && (
         <div className="card empty-state">
-          <div className="empty-state-icon" style={{ animation: 'pulse 1.5s infinite' }}>🎯</div>
+          <div className="empty-state-icon">
+            <IconTarget width={42} height={42} style={{ color: 'var(--blue)', animation: 'pulse 1.5s infinite' }} />
+          </div>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: 8 }}>
             Comparing Resume Against Job Description...
           </h2>
@@ -337,7 +375,7 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                   background: `${gaugeColor}15`,
                   border: `1px solid ${gaugeColor}30`,
                   padding: '3px 10px',
-                  borderRadius: '999px'
+                  borderRadius: 'var(--radius-sm)'
                 }}
               >
                 {compatScore >= 80 ? 'High Match' : compatScore >= 60 ? 'Moderate Match' : 'Low Match'}
@@ -405,8 +443,8 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                   padding: '16px'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#4ade80', fontWeight: 600, fontSize: '0.88rem', marginBottom: 12 }}>
-                  <span>✓</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#16a34a', fontWeight: 600, fontSize: '0.88rem', marginBottom: 12 }}>
+                  <IconCheck width={14} height={14} />
                   <span>Matching Requirements ({matchingReqs.length})</span>
                 </div>
                 <div className="feedback-list strengths">
@@ -428,16 +466,16 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                   padding: '16px'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171', fontWeight: 600, fontSize: '0.88rem', marginBottom: 12 }}>
-                  <span>✗</span>
-                  <span>Missing Requirements & Gaps ({missingReqs.length})</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#dc2626', fontWeight: 600, fontSize: '0.88rem', marginBottom: 12 }}>
+                  <IconX width={14} height={14} />
+                  <span>Missing Requirements &amp; Gaps ({missingReqs.length})</span>
                 </div>
                 <div className="feedback-list weaknesses">
                   {missingReqs.map((req, idx) => (
                     <li key={`miss-${idx}`}>{req}</li>
                   ))}
                   {missingReqs.length === 0 && (
-                    <div style={{ fontSize: '0.82rem', color: '#4ade80' }}>All primary JD requirements covered!</div>
+                    <div style={{ fontSize: '0.82rem', color: '#16a34a' }}>All primary JD requirements covered!</div>
                   )}
                 </div>
               </div>
@@ -467,14 +505,20 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                             <td style={{ fontWeight: 600 }}>{row.skill || row.name}</td>
                             <td style={{ textAlign: 'center' }}>
                               {inCv ? (
-                                <span style={{ color: '#4ade80', fontWeight: 700 }}>✓ Yes</span>
+                                <span style={{ color: '#16a34a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                  <IconCheck width={12} height={12} /> Yes
+                                </span>
                               ) : (
-                                <span style={{ color: '#f87171', fontWeight: 700 }}>✗ No</span>
+                                <span style={{ color: '#dc2626', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                  <IconX width={12} height={12} /> No
+                                </span>
                               )}
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               {inJd ? (
-                                <span style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>✓ Yes</span>
+                                <span style={{ color: 'var(--blue)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                  <IconCheck width={12} height={12} /> Yes
+                                </span>
                               ) : (
                                 <span style={{ color: 'var(--text-dim)' }}>Optional</span>
                               )}
@@ -502,8 +546,8 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                     <div
                       key={`rec-${idx}`}
                       style={{
-                        background: 'rgba(56, 189, 248, 0.08)',
-                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        background: 'var(--blue-tint)',
+                        border: '1px solid rgba(37, 99, 235, 0.2)',
                         borderRadius: 'var(--radius-sm)',
                         padding: '12px 16px',
                         display: 'flex',
@@ -513,11 +557,11 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                     >
                       <span
                         style={{
-                          background: 'var(--accent-blue)',
-                          color: '#0f172a',
+                          background: 'var(--blue)',
+                          color: '#ffffff',
                           width: 22,
                           height: 22,
-                          borderRadius: '50%',
+                          borderRadius: 'var(--radius-sm)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',

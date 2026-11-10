@@ -31,6 +31,7 @@ from .services.ai_evaluator import (
     match_job_description,
     generate_bullets,
     generate_interview_questions,
+    check_api_models,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ def process_evaluation(
     api_key: Optional[str],
     provider: Optional[str],
     file_ext: str = ".txt",
+    user=None,
 ) -> Dict[str, Any]:
     # 1. Legitimacy check
     legitimacy_data = evaluate_legitimacy(raw_text)
@@ -145,6 +147,7 @@ def process_evaluation(
 
     # 5. Save EvaluationRecord to DB
     record = EvaluationRecord(
+        user=user,
         candidate_name=effective_name,
         target_role=target_role,
         is_legitimate=is_legitimate,
@@ -259,6 +262,8 @@ def evaluate_upload(request):
     file_ext = ext if ext else ".txt"
     candidate_name = request.data.get("candidate_name") or inferred_name
 
+    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+
     try:
         res = process_evaluation(
             raw_text=text,
@@ -267,6 +272,7 @@ def evaluate_upload(request):
             api_key=api_key,
             provider=provider,
             file_ext=file_ext,
+            user=user,
         )
         return Response(res)
     except Exception as e:
@@ -292,6 +298,8 @@ def evaluate_text(request):
     provider = get_effective_provider(request)
     candidate_name = request.data.get("candidate_name")
 
+    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+
     try:
         res = process_evaluation(
             raw_text=raw_text,
@@ -300,6 +308,7 @@ def evaluate_text(request):
             api_key=api_key,
             provider=provider,
             file_ext=".txt",
+            user=user,
         )
         return Response(res)
     except Exception as e:
@@ -420,6 +429,17 @@ def get_history_detail(request, pk: int):
         },
     }
     return Response(response_data)
+
+
+@api_view(["GET"])
+def dashboard_stats(request):
+    """
+    Returns aggregated metrics for both admin and user dashboards.
+    Supports filtering by current user if authenticated or via user_id query parameter.
+    """
+    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+    stats = EvaluationRecord.get_dashboard_stats(user=user)
+    return Response(stats)
 
 
 @api_view(["POST"])
@@ -545,6 +565,19 @@ def interview_prep(request):
         api_key=api_key,
         provider=provider,
     )
+    return Response(res)
+
+
+@api_view(["GET", "POST"])
+def check_models(request):
+    """
+    Checks an API key for available models, connectivity,
+    and returns discovered models with status and auto-switch readiness.
+    """
+    api_key = get_effective_api_key(request)
+    provider = get_effective_provider(request)
+
+    res = check_api_models(api_key=api_key, requested_provider=provider)
     return Response(res)
 
 

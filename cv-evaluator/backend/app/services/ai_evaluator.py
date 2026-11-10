@@ -147,8 +147,14 @@ Please evaluate this CV thoroughly for the '{role_title}' role and output only t
                     logger.info(f"Groq evaluation successfully completed with model: {model_name}")
                     return parse_json_safely(raw_content)
                 
-                # If model not found, decommissioned, or forbidden, proceed to next model
-                if response.status_code in [404, 400, 403] and any(k in response.text.lower() for k in ["model", "access", "decommissioned"]):
+                # If rate limit or usage exhausted on this model, switch to next model
+                if response.status_code == 429 or any(term in response.text.lower() for term in ["rate limit", "rate_limit", "tpm", "rpm", "quota", "too many requests"]):
+                    logger.warning(f"Groq model {model_name} rate limit / usage reached (429). Switching to next model...")
+                    last_error = response.text
+                    continue
+
+                # If model not found, decommissioned, forbidden, or server overloaded, proceed to next model
+                if response.status_code in [404, 400, 403, 500, 502, 503] and any(k in response.text.lower() for k in ["model", "access", "decommissioned", "not found", "deprecated"]):
                     logger.warning(f"Groq model {model_name} not accessible: {response.text}. Trying next...")
                     last_error = response.text
                     continue

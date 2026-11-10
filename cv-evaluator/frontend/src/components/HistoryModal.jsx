@@ -1,32 +1,35 @@
 import React from 'react';
+import { IconFile, IconX, IconCheck } from './Icons';
 
 export default function HistoryModal({ isOpen, onClose, history, onSelectRecord }) {
   if (!isOpen) return null;
 
   const formatDate = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      + ' · '
-      + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return iso;
+    }
   };
 
-  const roleLabel = (id) =>
-    id ? id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown';
-
-  const scoreColor = (score) => {
-    if (score >= 75) return 'var(--green)';
-    if (score >= 50) return 'var(--blue)';
-    if (score >= 30) return 'var(--amber)';
-    return 'var(--red)';
+  const roleLabel = (role) => {
+    const map = {
+      software_development: 'Software Dev',
+      ai_engineer: 'AI Engineer',
+      data_analyst: 'Data Analyst',
+      web_development: 'Web Dev',
+    };
+    return map[role] || role;
   };
+
+  const scoreColor = (s) => (s >= 75 ? 'var(--green)' : s >= 50 ? 'var(--amber)' : 'var(--red)');
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        style={{ maxWidth: 660 }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="modal-card" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Evaluation History</h2>
@@ -34,12 +37,16 @@ export default function HistoryModal({ isOpen, onClose, history, onSelectRecord 
               Stored in PostgreSQL · Click any record to reload it
             </p>
           </div>
-          <button className="close-btn" onClick={onClose} aria-label="Close">✕</button>
+          <button className="close-btn" onClick={onClose} aria-label="Close" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconX width={14} height={14} />
+          </button>
         </div>
 
         {history.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '2.2rem', marginBottom: 10 }}>📭</div>
+            <div style={{ marginBottom: 10 }}>
+              <IconFile width={38} height={38} style={{ color: 'var(--text-muted)' }} />
+            </div>
             <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>No evaluations saved yet</p>
             <p style={{ fontSize: '0.8rem', marginTop: 4 }}>Evaluate a CV to see your history here.</p>
           </div>
@@ -95,8 +102,9 @@ export default function HistoryModal({ isOpen, onClose, history, onSelectRecord 
 
                   {/* Right: scores & badges */}
                   <div className="history-item-scores">
-                    <span className={`tag ${item.is_legitimate ? 'tag-success' : 'tag-danger'}`}>
-                      {item.is_legitimate ? '✓ Valid CV' : '✕ Invalid'}
+                    <span className={`tag ${item.is_legitimate ? 'tag-success' : 'tag-danger'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {item.is_legitimate ? <IconCheck width={11} height={11} /> : <IconX width={11} height={11} />}
+                      {item.is_legitimate ? 'Valid CV' : 'Invalid'}
                     </span>
                     {item.ats_score != null && (
                       <div style={{ textAlign: 'center' }}>
@@ -119,7 +127,13 @@ export default function HistoryModal({ isOpen, onClose, history, onSelectRecord 
                         background: 'var(--purple-tint)', color: 'var(--purple)',
                         border: '1px solid rgba(167,139,250,0.25)',
                         flexShrink: 0,
-                      }}>AI ✓</span>
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3
+                      }}>
+                        <IconCheck width={10} height={10} />
+                        AI
+                      </span>
                     )}
                   </div>
                 </div>

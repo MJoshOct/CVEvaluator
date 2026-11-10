@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconCompass, IconCheck, IconLightbulb } from './Icons';
 
 export default function CareerRecommendation({ recommendations }) {
   if (!recommendations || recommendations.length === 0) return null;
@@ -19,7 +20,7 @@ export default function CareerRecommendation({ recommendations }) {
       <div className="card-title">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🧭</span>
+            <IconCompass width={16} height={16} />
             <span>Career Role Alignment</span>
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 400, marginTop: 2 }}>
@@ -67,8 +68,9 @@ export default function CareerRecommendation({ recommendations }) {
               <div className="career-skills-row">
                 <span className="career-skills-label">Matched:</span>
                 {matchedSkills.slice(0, 3).map((skill, sIdx) => (
-                  <span key={`m-${sIdx}`} className="micro-tag micro-tag-match">
-                    ✓ {skill}
+                  <span key={`m-${sIdx}`} className="micro-tag micro-tag-match" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <IconCheck width={10} height={10} />
+                    {skill}
                   </span>
                 ))}
                 {matchedSkills.length === 0 && (
@@ -100,10 +102,15 @@ export default function CareerRecommendation({ recommendations }) {
           borderTop: '1px solid rgba(255, 255, 255, 0.05)',
           fontSize: '0.76rem',
           color: 'var(--text-dim)',
-          textAlign: 'center'
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6
         }}
       >
-        💡 Scores based on keyword matching across all predefined roles — not AI-generated
+        <IconLightbulb width={13} height={13} />
+        <span>Scores based on keyword matching across all predefined roles — not AI-generated</span>
       </div>
     </div>
   );
