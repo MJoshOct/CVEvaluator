@@ -70,7 +70,8 @@ parsed_db = urllib.parse.urlparse(database_url)
 db_name = parsed_db.path.lstrip('/') if parsed_db.path else 'cveval_db'
 db_user = urllib.parse.unquote(parsed_db.username or 'cveval_user')
 db_password = urllib.parse.unquote(parsed_db.password or 'cveval_pass')
-db_host = parsed_db.hostname or 'db'
+raw_host = parsed_db.hostname
+db_host = 'db' if (not raw_host or raw_host == 'cv_evaluator_db') else raw_host
 db_port = parsed_db.port or 5432
 
 DATABASES = {
