@@ -5,15 +5,19 @@ import EvaluatorResultsView from './components/EvaluatorResultsView';
 import JDMatchPanel from './components/JDMatchPanel';
 import BulletGeneratorPanel from './components/BulletGeneratorPanel';
 import InterviewPrepPanel from './components/InterviewPrepPanel';
+import UserDashboard from './components/UserDashboard';
 import ApiKeyModal from './components/ApiKeyModal';
 import ImprovedCvModal from './components/ImprovedCvModal';
+import AuthGate from './components/AuthGate';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import {
   IconFile,
   IconTarget,
   IconWrench,
   IconClock,
   IconSparkles,
-  IconMic
+  IconMic,
+  IconCrown,
 } from './components/Icons';
 
 const DEFAULT_ROLES = [
@@ -23,14 +27,10 @@ const DEFAULT_ROLES = [
   { id: 'web_development', title: 'Web Development', description: 'Full-stack/frontend web apps, React, Node.js, and web performance.' }
 ];
 
-const MODES = [
-  { id: 'evaluator', label: 'Resume Evaluator', Icon: IconFile },
-  { id: 'jd-match', label: 'JD Matcher', Icon: IconTarget },
-  { id: 'tools', label: 'AI Tools', Icon: IconWrench },
-];
+function AppContent() {
+  const { user, isAdmin, token } = useAuth();
 
-export default function App() {
-  const [activeMode, setActiveMode] = useState('evaluator'); // 'evaluator' | 'jd-match' | 'tools'
+  const [activeMode, setActiveMode] = useState('evaluator'); // 'evaluator' | 'jd-match' | 'tools' | 'admin-dashboard'
   const [activeTool, setActiveTool] = useState('bullets');   // 'bullets' | 'interview'
 
   // Common and Evaluator Mode state
@@ -41,6 +41,28 @@ export default function App() {
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Compute available navigation modes based on role
+  const availableModes = [
+    { id: 'evaluator', label: 'Resume Evaluator', Icon: IconFile },
+    { id: 'jd-match', label: 'JD Matcher', Icon: IconTarget },
+    { id: 'tools', label: 'AI Tools', Icon: IconWrench },
+  ];
+
+  if (isAdmin) {
+    availableModes.push({
+      id: 'admin-dashboard',
+      label: 'Admin Analytics',
+      Icon: IconCrown,
+    });
+  }
+
+  // Ensure active mode is valid if role changes
+  useEffect(() => {
+    if (!isAdmin && activeMode === 'admin-dashboard') {
+      setActiveMode('evaluator');
+    }
+  }, [isAdmin, activeMode]);
 
   useEffect(() => {
     fetchRoles();
@@ -69,6 +91,10 @@ export default function App() {
     setErrorMessage(null);
 
     const activeKey = submittedKey || apiKey;
+    const finalCandidateName = candidateName || user?.displayName || user?.username || '';
+
+    // Auth headers
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
     try {
       let res;
@@ -77,26 +103,30 @@ export default function App() {
         formData.append('file', file);
         formData.append('target_role', role);
         if (activeKey) formData.append('api_key', activeKey);
-        if (candidateName) formData.append('candidate_name', candidateName);
+        if (finalCandidateName) formData.append('candidate_name', finalCandidateName);
 
         res = await fetch('/api/evaluate/upload', {
           method: 'POST',
           body: formData,
-          headers: activeKey ? { 'X-AI-API-Key': activeKey } : {}
+          headers: {
+            ...authHeaders,
+            ...(activeKey ? { 'X-AI-API-Key': activeKey } : {}),
+          },
         });
       } else {
         res = await fetch('/api/evaluate/text', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(activeKey ? { 'X-AI-API-Key': activeKey } : {})
+            ...authHeaders,
+            ...(activeKey ? { 'X-AI-API-Key': activeKey } : {}),
           },
           body: JSON.stringify({
             text,
             target_role: role,
             api_key: activeKey,
-            candidate_name: candidateName
-          })
+            candidate_name: finalCandidateName,
+          }),
         });
       }
 
@@ -115,6 +145,12 @@ export default function App() {
     }
   };
 
+  const handleOpenRecord = (record) => {
+    setEvaluationResult(record);
+    setActiveMode('evaluator');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="app-container">
       {/* Top Header */}
@@ -122,7 +158,7 @@ export default function App() {
 
       {/* Mode Switcher Tabs */}
       <nav className="mode-tabs">
-        {MODES.map((mode) => {
+        {availableModes.map((mode) => {
           const ModeIcon = mode.Icon;
           return (
             <button
@@ -149,7 +185,7 @@ export default function App() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          1. EVALUATOR MODE (Upload centered on top, output below)
+          1. EVALUATOR MODE
          ───────────────────────────────────────────────────────────── */}
       {activeMode === 'evaluator' && (
         <div className="evaluator-vertical-layout">
@@ -261,6 +297,13 @@ export default function App() {
         </div>
       )}
 
+      {/* ─────────────────────────────────────────────────────────────
+          4. ADMIN DASHBOARD & ANALYTICS MODE
+         ───────────────────────────────────────────────────────────── */}
+      {activeMode === 'admin-dashboard' && isAdmin && (
+        <UserDashboard onOpenRecord={handleOpenRecord} />
+      )}
+
       {/* Shared Modals */}
       <ApiKeyModal
         isOpen={isKeyModalOpen}
@@ -275,5 +318,15 @@ export default function App() {
         evaluationResult={evaluationResult}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthGate>
+        <AppContent />
+      </AuthGate>
+    </AuthProvider>
   );
 }

@@ -1,8 +1,18 @@
 from django.urls import re_path
 from . import views
+from . import auth_views
 
 urlpatterns = [
     re_path(r'^health/?$', views.health_check),
+    re_path(r'^api/auth/login/?$', auth_views.api_auth_login),
+    re_path(r'^api/auth/register/?$', auth_views.api_auth_register),
+    re_path(r'^api/auth/me/?$', auth_views.api_auth_me),
+    re_path(r'^api/auth/logout/?$', auth_views.api_auth_logout),
+    re_path(r'^api/auth/google/?$', auth_views.api_auth_google),
+    re_path(r'^api/auth/update-username/?$', auth_views.api_auth_update_username),
+    re_path(r'^api/auth/users/?$', auth_views.api_auth_list_users),
+    re_path(r'^api/auth/users/(?P<user_id>\d+)/role/?$', auth_views.api_auth_set_user_role),
+    re_path(r'^api/auth/reset-users/?$', auth_views.api_auth_reset_users),
     re_path(r'^api/roles/?$', views.get_roles),
     re_path(r'^api/evaluate/upload/?$', views.evaluate_upload),
     re_path(r'^api/evaluate/text/?$', views.evaluate_text),

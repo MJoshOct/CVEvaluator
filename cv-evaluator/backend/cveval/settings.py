@@ -120,3 +120,22 @@ REST_FRAMEWORK = {
 AI_API_KEY = os.environ.get('AI_API_KEY', '')
 AI_PROVIDER = os.environ.get('AI_PROVIDER', 'groq')
 AI_MODEL = os.environ.get('AI_MODEL', 'llama-3.1-8b-instant')
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.environ.get(
+    'GOOGLE_CLIENT_ID',
+    '579740202902-bi2bhgpfpcej1vad61v5p5cvsnnf9pun.apps.googleusercontent.com'
+)
+GOOGLE_CLIENT_SECRET = os.environ.get(
+    'GOOGLE_CLIENT_SECRET',
+    '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'
+)
+GOOGLE_ADMIN_EMAILS = [
+    e.strip().lower()
+    for e in os.environ.get(
+        'GOOGLE_ADMIN_EMAILS',
+        'admin@cvevaluator.local,candidate@cvevaluator.local,user@cvevaluator.local'
+    ).split(',')
+    if e.strip()
+]
+

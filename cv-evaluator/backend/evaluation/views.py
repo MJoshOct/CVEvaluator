@@ -37,6 +37,21 @@ from .services.ai_evaluator import (
 logger = logging.getLogger(__name__)
 
 
+def get_request_user(request):
+    """Resolves authenticated user from standard session or Bearer token."""
+    if getattr(request, 'user', None) and request.user.is_authenticated:
+        return request.user
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            from .auth_views import get_user_from_token
+            return get_user_from_token(token)
+        except Exception as e:
+            logger.debug(f"Could not resolve user from token: {e}")
+    return None
+
+
 def get_effective_api_key(request) -> str:
     key = (
         request.data.get("api_key")
@@ -262,7 +277,7 @@ def evaluate_upload(request):
     file_ext = ext if ext else ".txt"
     candidate_name = request.data.get("candidate_name") or inferred_name
 
-    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+    user = get_request_user(request)
 
     try:
         res = process_evaluation(
@@ -298,7 +313,7 @@ def evaluate_text(request):
     provider = get_effective_provider(request)
     candidate_name = request.data.get("candidate_name")
 
-    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+    user = get_request_user(request)
 
     try:
         res = process_evaluation(
@@ -321,10 +336,14 @@ def evaluate_text(request):
 
 @api_view(["GET"])
 def get_history(request):
-    """Returns the last 20 evaluation records."""
-    limit = int(request.GET.get("limit", 20))
+    """Returns evaluation records. Admins see all, standard candidates see their own."""
+    limit = int(request.GET.get("limit", 50))
+    user = get_request_user(request)
     try:
-        records = EvaluationRecord.objects.all().order_by("-created_at")[:limit]
+        qs = EvaluationRecord.objects.all()
+        if user and not (user.is_staff or user.is_superuser):
+            qs = qs.filter(user=user)
+        records = qs.order_by("-created_at")[:limit]
         serializer = HistoryItemSerializer(records, many=True)
         return Response(serializer.data)
     except Exception as e:
@@ -332,10 +351,18 @@ def get_history(request):
         return Response([])
 
 
-@api_view(["GET"])
+@api_view(["GET", "DELETE"])
 def get_history_detail(request, pk: int):
-    """Returns single evaluation record with full details."""
+    """Returns single evaluation record with full details, or deletes it (DELETE)."""
     record = get_object_or_404(EvaluationRecord, pk=pk)
+
+    if request.method == "DELETE":
+        record_id = record.id
+        record.delete()
+        return Response(
+            {"success": True, "message": f"Evaluation #{record_id} deleted successfully."}
+        )
+
     response_data = {
         "id": record.id,
         "created_at": record.created_at,
@@ -435,10 +462,11 @@ def get_history_detail(request, pk: int):
 def dashboard_stats(request):
     """
     Returns aggregated metrics for both admin and user dashboards.
-    Supports filtering by current user if authenticated or via user_id query parameter.
+    Admin receives system-wide metrics; candidates receive personal statistics.
     """
-    user = request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
-    stats = EvaluationRecord.get_dashboard_stats(user=user)
+    user = get_request_user(request)
+    filter_user = None if (user and (user.is_staff or user.is_superuser)) else user
+    stats = EvaluationRecord.get_dashboard_stats(user=filter_user)
     return Response(stats)
 
 
