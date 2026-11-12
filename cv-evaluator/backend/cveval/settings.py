@@ -124,11 +124,11 @@ AI_MODEL = os.environ.get('AI_MODEL', 'llama-3.1-8b-instant')
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get(
     'GOOGLE_CLIENT_ID',
-    '579740202902-bi2bhgpfpcej1vad61v5p5cvsnnf9pun.apps.googleusercontent.com'
+    'Google_AUTh_key'
 )
 GOOGLE_CLIENT_SECRET = os.environ.get(
     'GOOGLE_CLIENT_SECRET',
-    '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'
+    'Auth_secret'
 )
 GOOGLE_ADMIN_EMAILS = [
     e.strip().lower()
