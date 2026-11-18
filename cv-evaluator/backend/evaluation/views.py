@@ -52,13 +52,45 @@ def get_request_user(request):
     return None
 
 
-def get_effective_api_key(request) -> str:
-    key = (
-        request.data.get("api_key")
-        or request.headers.get("X-AI-API-Key")
-        or getattr(settings, "AI_API_KEY", "")
-    )
-    return (key or "").strip()
+def get_effective_api_key(request, requested_provider: Optional[str] = None) -> str:
+    """
+    Resolves the active AI API key using a 3-tier fallback strategy:
+    ---------------------------------------------------------------
+    Tier 1 (Per-Request Override):
+      If the user provided their own key in request body ('api_key') or header ('X-AI-API-Key'),
+      use it directly (stored in candidate's browser session).
+      
+    Tier 2 (Database System Key Pool):
+      Query active keys stored by Administrator in PostgreSQL (SystemApiKey).
+      Picks the healthiest active key (ordered by lowest failure_count, newest first).
+      Automatically enables Groq / Gemini key rotation without code changes.
+      
+    Tier 3 (Server Default Fallback):
+      Fallback to static settings.AI_API_KEY from environment variables if pool is empty.
+    """
+    # 1. Check user request overrides
+    key = request.data.get("api_key") or request.headers.get("X-AI-API-Key")
+    if key and key.strip():
+        return key.strip()
+
+    # 2. Query encrypted database key pool
+    try:
+        from .models import SystemApiKey
+        prov = requested_provider or request.data.get("provider") or getattr(settings, "AI_PROVIDER", "groq")
+        qs = SystemApiKey.objects.filter(is_active=True)
+        if prov:
+            qs = qs.filter(provider=prov)
+        # Select active key with fewest recorded failures
+        key_obj = qs.order_by("failure_count", "-created_at").first()
+        if key_obj:
+            decrypted = key_obj.get_decrypted_key()
+            if decrypted:
+                return decrypted
+    except Exception as e:
+        logger.debug(f"Could not read key from SystemApiKey pool: {e}")
+
+    # 3. Fallback to settings .env key
+    return (getattr(settings, "AI_API_KEY", "") or "").strip()
 
 
 def get_effective_provider(request) -> Optional[str]:
@@ -569,7 +601,7 @@ def bullet_rewrite(request):
 @api_view(["POST"])
 def interview_prep(request):
     """Interview question generation endpoint."""
-    cv_text = request.data.get("cv_text", "").strip()
+    cv_text = (request.data.get("cv_text") or "").strip()
     upload_file = request.FILES.get("file")
     if not cv_text and upload_file:
         file_bytes = upload_file.read()
@@ -583,7 +615,7 @@ def interview_prep(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    role = request.data.get("role", "Software Engineer")
+    role = request.data.get("target_role") or request.data.get("role") or "Software Engineer"
     api_key = get_effective_api_key(request)
     provider = get_effective_provider(request)
 
@@ -593,6 +625,11 @@ def interview_prep(request):
         api_key=api_key,
         provider=provider,
     )
+    if res.get("error") and not (res.get("technical_questions") or res.get("project_questions") or res.get("hr_questions")):
+        return Response(
+            {"error": res["error"], "detail": res["error"]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     return Response(res)
 
 
@@ -613,3 +650,5 @@ def check_models(request):
 def api_root(request):
     """Root endpoint for status and ingress probe."""
     return Response({"status": "ok", "message": "CV Evaluator API"})
+
+

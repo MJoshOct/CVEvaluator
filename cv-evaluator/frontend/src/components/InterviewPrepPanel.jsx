@@ -120,15 +120,16 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
         const formData = new FormData();
         formData.append('file', cvFile);
         formData.append('target_role', selectedRole);
+        formData.append('role', selectedRole);
         if (apiKey) formData.append('api_key', apiKey);
 
-        res = await fetch('/api/tools/interview-prep', {
+        res = await fetch('/api/interview-prep', {
           method: 'POST',
           body: formData,
           headers: apiKey ? { 'X-AI-API-Key': apiKey } : {}
         });
       } else {
-        res = await fetch('/api/tools/interview-prep', {
+        res = await fetch('/api/interview-prep', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -137,6 +138,7 @@ export default function InterviewPrepPanel({ apiKey, onApiKeyChange, roles = [] 
           body: JSON.stringify({
             cv_text: cvText.trim(),
             target_role: selectedRole,
+            role: selectedRole,
             api_key: apiKey
           })
         });

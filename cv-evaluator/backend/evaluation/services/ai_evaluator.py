@@ -8,55 +8,68 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 EVALUATION_SYSTEM_PROMPT = """You are an elite Senior Technical Recruiter and Engineering Hiring Manager.
-Your role is to deeply evaluate a candidate's CV/resume against a target role, identify genuine strengths and weaknesses, and provide an actionable, high-impact roadmap for how they can improve their CV to land high-paying offers in that role.
+Your role is to evaluate a candidate's actual CV/resume against a target role, identify genuine strengths and weaknesses, and provide an actionable roadmap to polish and strengthen their EXISTING content.
+
+CRITICAL GROUNDING AND TRUTHFULNESS RULES:
+1. STRICT FACTUAL ACCURACY (NO NEW INFORMATION): You must work ONLY on the facts, skills, tools, and experiences already explicitly present in the candidate's CV. DO NOT invent, assume, or extrapolate new technologies, employers, projects, degrees, or certifications that the candidate never mentioned.
+2. DO NOT FABRICATE METRICS OR NUMBERS: Never make up fake percentages, dollar amounts, user counts, or latency reductions (e.g., do NOT invent "scaled to 1M users" or "improved efficiency by 35%"). If the candidate's original bullet point lacks quantifiable metrics, improve the action verb and clarity, and use a clear bracketed placeholder such as "[quantify, e.g., by X% / X users]" prompting the candidate to provide their true metrics.
+3. BULLET REWRITES MUST BE FROM ACTUAL CV:
+   - For `suggested_bullet_rewrites`, every `original_example` MUST be an exact quote or verbatim excerpt of an actual sentence or bullet point found in the candidate's provided CV text. Never use generic or invented examples.
+   - For `improved_version`, rewrite that specific statement using active, concise STAR formula phrasing (Action + Context + Result) while retaining 100% of the original factual meaning.
+4. SUMMARY: The summary must strictly synthesize the candidate's genuine stated background and capabilities. Do not invent years of experience or seniorities not stated in the CV.
+5. RECOMMENDATIONS: Keep recommendations focused on how the candidate can better articulate, organize, and highlight their existing background. Suggested portfolio project ideas must be clearly framed as optional future projects to build, not as experience already completed.
 
 You MUST respond strictly with valid JSON conforming to the following structure:
 {
   "ai_score": 85.0,
-  "summary": "Executive summary of the candidate's profile and overall readiness for the target role.",
+  "summary": "Executive summary strictly grounded in the candidate's actual profile and demonstrated readiness for the target role.",
   "strengths": [
-    "Specific technical or domain strength 1",
-    "Specific technical or domain strength 2"
+    "Specific strength directly grounded in the provided CV 1",
+    "Specific strength directly grounded in the provided CV 2"
   ],
   "weaknesses": [
-    "Identified critical gap or missing depth in skill 1",
-    "Identified critical gap or missing depth in skill 2"
+    "Identified gap or missing depth relative to target role requirements 1",
+    "Identified gap or missing depth relative to target role requirements 2"
   ],
   "improvement_recommendations": [
-    "Direct actionable suggestion 1 on what to add or adjust",
-    "Direct actionable suggestion 2 on skills or credentials to acquire"
+    "Specific advice on how to improve the articulation, structure, or clarity of existing CV content 1",
+    "Specific advice on how to improve the articulation, structure, or clarity of existing CV content 2"
   ],
   "suggested_project_ideas": [
-    "Portfolio project idea 1 demonstrating target role competencies",
-    "Portfolio project idea 2 solving a real-world enterprise problem"
+    "Optional future project idea to bridge skill gaps for the target role 1",
+    "Optional future project idea to bridge skill gaps for the target role 2"
   ],
   "suggested_bullet_rewrites": [
     {
-      "original_example": "Typical weak phrasing found in this resume or similar resumes",
-      "improved_version": "Rewritten bullet using STAR/XYZ formula (Accomplished [X] measured by [Y] by doing [Z]) with strong action verbs and quantified impact"
+      "original_example": "Exact original bullet point extracted directly from the candidate's CV text",
+      "improved_version": "Active, professional STAR rewrite of that exact bullet, using [X%] placeholders if metrics were unstated"
     }
   ]
 }
 """
 
 IMPROVE_RESUME_SYSTEM_PROMPT = """You are an elite Resume Strategist and Executive Career Coach.
-Analyze the provided CV against the target role.
-Rewrite the professional summary to be compelling and achievement-oriented.
-Identify 3 weak bullet points from the CV and rewrite them using the STAR format (Accomplished [X] measured by [Y] by doing [Z]).
-Identify specific grammatical, structural, or stylistic mistakes.
-Convert 3 passive responsibility statements into strong, achievement-oriented statements.
+Your task is to refine and elevate the candidate's existing CV content without fabricating any new information.
+
+CRITICAL GROUNDING AND TRUTHFULNESS RULES:
+1. WORK ONLY WITH EXISTING INFORMATION: Refine and improve ONLY the skills, experiences, projects, and achievements already present in the provided CV. Do NOT add new technologies, unmentioned tools, fake jobs, or fabricated responsibilities.
+2. DO NOT FABRICATE METRICS: If an original bullet lacks metrics, DO NOT make up fake numbers or statistics. Enhance the action verbs, clarity, and structure, and use bracketed placeholders like "[quantify, e.g., by X% / X hours]" so the candidate can supply their actual figures.
+3. EXTRACT ACTUAL BULLETS:
+   - For `rewritten_bullets`, select actual weak or passive sentences/bullets from the candidate's CV. Rewrite them using STAR format while retaining the exact core task and technology they actually performed.
+   - For `achievement_rewrites`, select actual passive duty statements from the CV and rewrite them into active, impact-oriented statements.
+4. SUMMARY: Rewrite the professional summary based strictly on their actual stated qualifications, background, and level of experience.
 
 You MUST respond strictly with valid JSON conforming to this schema:
 {
-  "improved_summary": "Compelling rewritten summary...",
+  "improved_summary": "Compelling rewritten summary grounded solely in the candidate's actual qualifications...",
   "rewritten_bullets": [
-    {"original": "Original weak bullet", "improved": "STAR format improved bullet"}
+    {"original": "Exact original weak bullet from the CV", "improved": "STAR format improved bullet preserving original facts with [placeholder] for unstated metrics"}
   ],
   "grammar_issues": [
-    "Grammar or style issue description..."
+    "Specific grammar, spelling, or stylistic issue identified in the candidate's actual text..."
   ],
   "achievement_rewrites": [
-    {"original": "Passive responsibility...", "improved": "Active achievement statement..."}
+    {"original": "Exact passive duty statement from the CV", "improved": "Active, impact-focused statement based on that exact duty"}
   ]
 }
 """
@@ -82,16 +95,20 @@ You MUST respond strictly with valid JSON conforming to this schema:
 """
 
 BULLET_REWRITE_SYSTEM_PROMPT = """You are an expert Executive Resume Writer.
-Rewrite each bullet point using the STAR format (Accomplished [X] measured by [Y] by doing [Z]).
-Use strong action verbs, eliminate passive filler phrases, and quantify impact wherever possible.
+Rewrite each provided bullet point using the STAR format (Accomplished [Action/Result] through [Task/Context] by utilizing [Skills/Methods]).
+
+CRITICAL GROUNDING AND TRUTHFULNESS RULES:
+1. DO NOT INVENT NEW FACTS: Work ONLY with the information provided in each bullet. Do NOT introduce new tools, unmentioned technologies, fake achievements, or fabricated responsibilities that the candidate did not state.
+2. DO NOT FABRICATE METRICS: If the original bullet does not contain a specific number, metric, or percentage, DO NOT invent fake statistics (e.g., do NOT invent "reduced latency by 40%" or "boosted sales by 25%"). Instead, elevate the language with strong action verbs and structural clarity, and use clear bracketed placeholders like "[quantify: e.g. by X% / X users]" so the candidate can supply their actual data.
+3. PRESERVE ORIGINAL INTENT: The rewritten bullet must remain 100% truthful to what the candidate actually accomplished.
 
 You MUST respond strictly with valid JSON conforming to this schema:
 {
   "rewrites": [
     {
       "original": "Original bullet text",
-      "improved": "STAR-formatted high impact rewritten bullet",
-      "action_verb_used": "Action verb (e.g. Architected, Spearheaded, Accelerated)"
+      "improved": "High-impact rewritten bullet preserving original facts with [placeholder] if metric was unstated",
+      "action_verb_used": "Action verb used (e.g. Orchestrated, Automated, Spearheaded, Optimized)"
     }
   ]
 }
@@ -120,11 +137,16 @@ You MUST respond strictly with valid JSON conforming to this schema:
 
 
 def parse_json_safely(raw_str: str) -> Dict[str, Any]:
-    """Parses JSON cleanly even if wrapped inside markdown code blocks."""
+    """Parses JSON cleanly even if wrapped inside markdown code blocks or conversational text."""
     cleaned = raw_str.strip()
     match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', cleaned, re.DOTALL)
     if match:
         cleaned = match.group(1)
+    else:
+        start = cleaned.find('{')
+        end = cleaned.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            cleaned = cleaned[start:end + 1]
     return json.loads(cleaned)
 
 
@@ -148,7 +170,7 @@ def get_available_groq_models(client: httpx.Client, headers: Dict[str, str]) -> 
             data = res.json().get("data", [])
             valid_ids = [
                 m["id"] for m in data
-                if m.get("id") and not any(skip in m["id"].lower() for skip in ["whisper", "tts", "audio", "guard", "embed"])
+                if m.get("id") and not any(skip in m["id"].lower() for skip in ["whisper", "tts", "audio", "guard", "embed", "allam", "compound"])
             ]
             if valid_ids:
                 logger.info(f"Discovered active Groq models for account: {valid_ids}")
@@ -165,17 +187,13 @@ def _call_groq(system_prompt: str, user_prompt: str, api_key: str) -> Dict[str, 
         "Content-Type": "application/json"
     }
 
-    # Prioritized list of models across different capability & quota pools
+    # Prioritized list of active models across different capability & quota pools
     fallback_candidates = [
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "llama-3.2-11b-vision-preview",
-        "llama-3.2-3b-preview",
-        "llama-3.2-1b-preview",
+        "deepseek-r1-distill-llama-70b",
+        "qwen-2.5-32b",
         "gemma2-9b-it",
-        "llama3-70b-8192",
-        "llama3-8b-8192",
-        "mixtral-8x7b-32768",
     ]
 
     last_error = None
@@ -216,6 +234,14 @@ def _call_groq(system_prompt: str, user_prompt: str, api_key: str) -> Dict[str, 
                     data = response.json()
                     raw_content = data["choices"][0]["message"]["content"]
                     parsed = parse_json_safely(raw_content)
+
+                    # Validate that the model returned meaningful structured content
+                    if "strengths" in system_prompt and not (
+                        parsed.get("strengths") or parsed.get("improvement_recommendations") or parsed.get("suggested_bullet_rewrites")
+                    ):
+                        logger.warning(f"Groq model '{model_name}' returned empty evaluation fields. Trying next model...")
+                        last_error = f"Model {model_name} returned empty schema"
+                        continue
 
                     rem_tokens = response.headers.get("x-ratelimit-remaining-tokens")
                     rem_reqs = response.headers.get("x-ratelimit-remaining-requests")
@@ -486,7 +512,8 @@ Candidate CV Text:
 {cv_text[:8000]}
 \"\"\"
 
-Please evaluate this CV thoroughly for the '{role_title}' role and output only the required JSON.
+Please evaluate this CV thoroughly for the '{role_title}' role.
+IMPORTANT: Do NOT invent, assume, or add new facts, employers, or tools. For suggested_bullet_rewrites, you MUST extract real sentences directly from the Candidate CV Text above and rewrite them without fabricating numbers. Output only the required JSON.
 """
 
     try:
@@ -553,7 +580,7 @@ Candidate CV Text:
 {cv_text[:8000]}
 \"\"\"
 
-Please provide resume improvement suggestions conforming strictly to the requested JSON schema.
+Please provide resume improvement suggestions grounded strictly in the provided CV text. Do not invent new skills, numbers, or unmentioned experiences. Output only the requested JSON schema.
 """
 
     try:
@@ -656,7 +683,7 @@ def generate_bullets(
 Weak Bullets to rewrite:
 {json.dumps(weak_bullets, indent=2)}
 
-Please rewrite each bullet using STAR format and output only the required JSON.
+Please rewrite each bullet using STAR format. Do not invent fake facts, new tools, or unmentioned numbers; use [placeholders] if metrics are not in the original. Output only the required JSON.
 """
 
     try:
@@ -692,7 +719,8 @@ def generate_interview_questions(
         return {
             "technical_questions": [],
             "project_questions": [],
-            "hr_questions": []
+            "hr_questions": [],
+            "error": "No AI API key provided. Please provide an API key or configure a system key."
         }
 
     user_prompt = f"""Target Role: {role_title}
@@ -717,7 +745,8 @@ Please generate 4 technical, 3 project, and 3 HR interview questions with model 
         return {
             "technical_questions": [],
             "project_questions": [],
-            "hr_questions": []
+            "hr_questions": [],
+            "error": str(e)
         }
 
 

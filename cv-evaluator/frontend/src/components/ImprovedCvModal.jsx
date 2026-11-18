@@ -32,16 +32,14 @@ export function buildImprovedCvText(evaluationResult) {
   let summary = aiEval.summary || '';
   if (!summary) {
     const yrs = parseData.total_experience_years;
-    summary = `Results-oriented professional with ${yrs ? `${yrs}+ years of` : 'proven'} experience delivering high-quality, resilient solutions. Demonstrated track record of optimizing performance, driving technical innovation, and collaborating effectively across cross-functional teams to meet mission-critical goals.`;
+    summary = `Results-oriented professional${yrs ? ` with ${yrs}+ years of experience` : ''} committed to delivering high-quality, reliable solutions. Track record of problem-solving, continuous learning, and effective collaboration across teams to achieve key organizational goals.`;
   }
 
-  // 2. Skills
+  // 2. Skills (grounded strictly in the candidate's actual parsed skills - never inject unverified/missing skills)
   const existingSkills = parseData.skills || [];
-  const recommendedSkills = (keywordData.missing_keywords || []).slice(0, 6);
-  const allSkills = Array.from(new Set([...existingSkills, ...recommendedSkills]));
-  const skillsText = allSkills.length > 0
-    ? allSkills.join(', ')
-    : 'Python, JavaScript, TypeScript, React, Node.js, SQL, Docker, Git, CI/CD, REST APIs, Agile/Scrum';
+  const skillsText = existingSkills.length > 0
+    ? existingSkills.join(', ')
+    : '[List your verified technical skills and proficiencies here]';
 
   // 3. Rewritten Bullets / Experience
   const rewrites = aiEval.suggested_bullet_rewrites || [];
@@ -50,11 +48,11 @@ export function buildImprovedCvText(evaluationResult) {
   let experienceBlock = '';
   if (experiences.length > 0) {
     experienceBlock = experiences.map((exp, idx) => {
-      const title = exp.title || 'Senior Software Engineer';
-      const company = exp.company || 'Enterprise Solutions Inc.';
-      const dates = exp.duration || exp.dates || '2022 – Present';
-      
-      // If we have AI rewritten bullets, use the improved STAR versions
+      const title = exp.title || 'Role / Position';
+      const company = exp.company || 'Company / Organization';
+      const dates = exp.duration || exp.dates || '';
+      const header = [title, company, dates ? `(${dates})` : ''].filter(Boolean).join(' | ');
+
       const bullets = [];
       if (rewrites[idx]?.improved_version) {
         bullets.push(`- ${rewrites[idx].improved_version}`);
@@ -62,52 +60,42 @@ export function buildImprovedCvText(evaluationResult) {
       if (rewrites[idx + 1]?.improved_version) {
         bullets.push(`- ${rewrites[idx + 1].improved_version}`);
       }
-      if (bullets.length === 0) {
-        bullets.push(
-          `- Architected and implemented high-throughput production services, reducing processing latency by 35% and supporting 1M+ active users.`,
-          `- Optimized database schema and caching layers, elevating data retrieval throughput by 40% with zero downtime.`,
-          `- Spearheaded continuous integration and deployment pipelines, accelerating team release cycles by 50%.`
-        );
+      if (bullets.length === 0 && exp.bullets && exp.bullets.length > 0) {
+        exp.bullets.forEach((b) => bullets.push(`- ${b}`));
       }
-      return `${title} | ${company} (${dates})\n${bullets.join('\n')}`;
+      if (bullets.length === 0) {
+        bullets.push(`- [Detail your specific contributions, technologies utilized, and measurable outcomes for this role]`);
+      }
+      return `${header}\n${bullets.join('\n')}`;
     }).join('\n\n');
+  } else if (rewrites.length > 0) {
+    // Format the candidate's actual improved STAR bullets directly from their CV
+    experienceBlock = `PROFESSIONAL HIGHLIGHTS & KEY ACCOMPLISHMENTS (STAR REWRITES)\n` +
+      rewrites.map((r) => `- ${r.improved_version}`).join('\n');
   } else {
-    // Default experience layout with STAR bullets
-    const bullet1 = rewrites[0]?.improved_version || 'Architected and deployed microservices serving 1.5M+ active users with 99.98% availability, cutting latency from 320ms to 75ms.';
-    const bullet2 = rewrites[1]?.improved_version || 'Optimized distributed database queries and caching layers, accelerating transaction processing throughput by 42%.';
-    const bullet3 = rewrites[2]?.improved_version || 'Implemented automated CI/CD workflows and automated testing suites, raising code test coverage from 65% to 92%.';
-
-    experienceBlock = `Senior Software Engineer | Enterprise Tech Systems (2022 – Present)
-- ${bullet1}
-- ${bullet2}
-- ${bullet3}
-
-Software Developer | Digital Solutions Lab (2020 – 2022)
-- Engineered full-stack modules and responsive web interfaces using modern frameworks, decreasing client onboarding turnaround time by 30%.
-- Collaborated in cross-functional Agile sprints to ship 14 major feature releases ahead of schedule.`;
+    experienceBlock = `- [Detail your specific contributions, technologies utilized, and measurable outcomes here]`;
   }
 
-  // 4. Projects (incorporate suggested project ideas if available)
-  const projects = aiEval.suggested_project_ideas || [];
-  let projectsBlock = '';
-  if (projects.length > 0) {
-    projectsBlock = `\n\nHIGH-IMPACT PORTFOLIO PROJECTS\n` + projects.map((proj, i) => {
-      return `Project ${i + 1}: ${proj}\n- Engineered end-to-end architecture adhering to industry best practices, automated testing, and scalable cloud deployment.`;
-    }).join('\n\n');
-  }
-
-  // 5. Education
+  // 4. Education
   const educationList = parseData.education || [];
   let educationBlock = '';
   if (educationList.length > 0) {
     educationBlock = educationList.map(edu => {
-      const degree = edu.degree || 'Bachelor of Science in Computer Science';
-      const inst = edu.institution || 'University';
+      const degree = edu.degree || 'Degree';
+      const inst = edu.institution || 'Institution';
       const year = edu.year ? `(${edu.year})` : '';
-      return `${degree} | ${inst} ${year}`.trim();
+      return [degree, inst, year].filter(Boolean).join(' | ').trim();
     }).join('\n');
   } else {
-    educationBlock = 'B.S. in Computer Science | Accredited University (2018 – 2022)\nRelevant Coursework: Distributed Systems, Algorithms, Database Systems, Software Engineering';
+    educationBlock = '[Add your degree, field of study, institution, and graduation year]';
+  }
+
+  // 5. Future Project Recommendations (clearly separated as reference ideas, not claimed experience)
+  const projects = aiEval.suggested_project_ideas || [];
+  let projectsBlock = '';
+  if (projects.length > 0) {
+    projectsBlock = `\n\nRECOMMENDED FUTURE PORTFOLIO PROJECTS (FOR CANDIDATE REFERENCE ONLY):\n` +
+      projects.map((proj, i) => `${i + 1}. ${proj}`).join('\n');
   }
 
   return `${name}
@@ -116,15 +104,14 @@ ${contactLine}
 PROFESSIONAL SUMMARY
 ${summary}
 
-TECHNICAL & CORE SKILLS
-- Proficiencies & Frameworks: ${skillsText}
-- Core Competencies: System Architecture, Performance Optimization, Cloud Deployment, Code Review, Agile Methodologies
+TECHNICAL SKILLS & PROFICIENCIES
+${skillsText}
 
-PROFESSIONAL EXPERIENCE
-${experienceBlock}${projectsBlock}
+PROFESSIONAL EXPERIENCE & ACHIEVEMENTS
+${experienceBlock}
 
 EDUCATION & CREDENTIALS
-${educationBlock}`;
+${educationBlock}${projectsBlock}`;
 }
 
 export default function ImprovedCvModal({ isOpen, onClose, evaluationResult }) {

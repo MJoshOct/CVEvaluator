@@ -114,3 +114,101 @@ class EvaluationRecord(models.Model):
             "role_breakdown": role_breakdown,
             "recent_evaluations": list(recent),
         }
+
+
+# ==============================================================================
+# System API Key & Dynamic OAuth Database Models
+# ==============================================================================
+
+class SystemApiKey(models.Model):
+    """
+    Stores third-party AI API keys (Groq, Gemini, OpenAI) in an encrypted pool.
+    
+    Why this exists:
+    - Allows administrators to plug in multiple Groq or Gemini API keys.
+    - If one key hits a rate limit (HTTP 429), the backend automatically rotates
+      to the next active key ordered by lowest failure count.
+    - Keys are encrypted at rest; raw keys are never stored in plain text.
+    """
+    PROVIDER_CHOICES = [
+        ('groq', 'Groq'),
+        ('gemini', 'Google Gemini'),
+        ('openai', 'OpenAI'),
+    ]
+    # AI service provider name ('groq', 'gemini', or 'openai')
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default='groq', db_index=True)
+    
+    # Friendly display name for the admin (e.g. 'Primary Groq Account', 'Backup Key')
+    label = models.CharField(max_length=100, default='Default Key')
+    
+    # Encrypted secret payload (encrypted via HMAC-SHA256 cipher in crypto_utils.py)
+    key_encrypted = models.TextField(help_text='Encrypted API key payload')
+    
+    # Prefix (e.g., 'gsk_') and suffix for displaying masked previews in the dashboard
+    key_prefix = models.CharField(max_length=10, blank=True)
+    key_suffix = models.CharField(max_length=10, blank=True)
+    
+    # Toggle switch: allows admins to disable a key without deleting it
+    is_active = models.BooleanField(default=True, db_index=True)
+    
+    # Tracks rate limit / quota errors to automatically prioritize healthy keys
+    failure_count = models.IntegerField(default=0)
+    
+    # Timestamp tracking
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['failure_count', '-created_at']
+
+    def get_decrypted_key(self) -> str:
+        """Decrypts and returns the raw API key for making backend LLM calls."""
+        from .services.crypto_utils import decrypt_secret
+        return decrypt_secret(self.key_encrypted)
+
+    def get_masked_key(self) -> str:
+        """Returns a masked representation (e.g. 'gsk_************3aB9') for safe UI display."""
+        from .services.crypto_utils import mask_secret
+        decrypted = self.get_decrypted_key()
+        return mask_secret(decrypted)
+
+
+class SystemOAuthConfig(models.Model):
+    """
+    Stores Google OAuth 2.0 configuration dynamically in the database.
+    
+    Why this exists:
+    - Allows administrators to configure Google Sign-In credentials through
+      the Admin Dashboard without editing server .env files or restarting containers.
+    - Client Secret is stored encrypted; Client ID is public for frontend discovery.
+    """
+    # Provider identity (defaults to 'google')
+    provider = models.CharField(max_length=20, default='google', unique=True)
+    
+    # Public Google OAuth Client ID (sent to frontend to initialize Google Sign-In)
+    client_id = models.CharField(max_length=255, blank=True, default='')
+    
+    # Encrypted Google OAuth Client Secret (kept strictly on server for token verification)
+    client_secret_encrypted = models.TextField(blank=True, default='')
+    client_secret_suffix = models.CharField(max_length=10, blank=True, default='')
+    
+    # Toggle to enable/disable OAuth sign-in globally
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def get_decrypted_secret(self) -> str:
+        """Decrypts and returns the raw Client Secret for Google token verification."""
+        if not self.client_secret_encrypted:
+            return ""
+        from .services.crypto_utils import decrypt_secret
+        return decrypt_secret(self.client_secret_encrypted)
+
+    def get_masked_secret(self) -> str:
+        """Returns a masked secret (e.g. '************X9T') for safe UI display."""
+        if not self.client_secret_encrypted:
+            return ""
+        from .services.crypto_utils import mask_secret
+        decrypted = self.get_decrypted_secret()
+        return mask_secret(decrypted)
+

@@ -1,25 +1,25 @@
-# 🚀 CV Evaluator — Developer Onboarding Guide
+﻿#  CV Evaluator - Developer Onboarding Guide
 
 Welcome to the **CV Evaluator** project! This guide gets any new team member running the app locally in under 10 minutes.
 
 ---
 
-## 📌 What This Project Does
+##  What This Project Does
 
 A **9-feature AI-powered CV/Resume evaluation system** with 4 app modes:
 
 ```
-📋 Resume Evaluator        🎯 JD Matcher
+ Resume Evaluator         JD Matcher
 ━━━━━━━━━━━━━━━━━━━         ━━━━━━━━━━━━━━━━━━━
 Stage 1a: Legitimacy Check  Upload CV + paste Job Description
 Stage 1b: ATS Score         → Compatibility % + skill-by-skill
 Stage 1c: Resume Parsing       comparison + AI recommendations
 Stage 2a: Role Matching
 Stage 2b: Keyword Analysis
-Stage 2c: Career Alignment  🧭 Career Advisor
+Stage 2c: Career Alignment   Career Advisor
 Stage 3:  AI Deep Review    ━━━━━━━━━━━━━━━━━━━
                             Upload CV → see which of 9 roles
-🛠️ AI Tools                  you're best aligned to (auto-scored)
+ AI Tools                  you're best aligned to (auto-scored)
 ━━━━━━━━━━━━━━━━━━━
 Bullet Generator            Interview Prep
   Weak bullets → STAR          CV + role → Q&A bank
@@ -28,7 +28,7 @@ Bullet Generator            Interview Prep
 
 ---
 
-## 🏗️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -41,7 +41,7 @@ Bullet Generator            Interview Prep
 
 ---
 
-## ⚡ Quickstart — Running Locally (5 minutes)
+##  Quickstart - Running Locally (5 minutes)
 
 ### Prerequisites
 
@@ -56,14 +56,14 @@ After installing, launch Docker Desktop and wait for the green "Engine running" 
 
 ---
 
-### Step 1 — Get the code
+### Step 1 - Get the code
 
 ```bash
 git clone <repo-url>
 cd cv-evaluator
 ```
 
-### Step 2 — Set up environment
+### Step 2 - Set up environment
 
 ```powershell
 # Windows PowerShell:
@@ -75,28 +75,28 @@ Open `.env` and optionally add a Groq API key (free at [console.groq.com/keys](h
 AI_API_KEY=gsk_your_key_here
 ```
 
-> The app works without an API key — Stages 1 & 2 (ATS score, resume parsing, role matching, keyword analysis, career alignment) always run. Stage 3 AI features require a key.
+> The app works without an API key - Stages 1 & 2 (ATS score, resume parsing, role matching, keyword analysis, career alignment) always run. Stage 3 AI features require a key.
 
-### Step 3 — Start the app
+### Step 3 - Start the app
 
 ```bash
 docker compose up --build
 ```
 
-### Step 4 — Open in browser
+### Step 4 - Open in browser
 
 | Service | URL |
 |---------|-----|
-| 🌐 Web UI | http://localhost:3000 |
-| 🔧 Django Admin | http://localhost:3000/admin/ |
-| ❤️ Health | http://localhost:8000/health |
+|  Web UI | http://localhost:3000 |
+|  Django Admin | http://localhost:3000/admin/ |
+|  Health | http://localhost:8000/health |
 
 > **Django Admin credentials**: Create a superuser after first run:
 > ```bash
 > docker compose exec backend python manage.py createsuperuser
 > ```
 
-### Step 5 — Stop the app
+### Step 5 - Stop the app
 
 ```bash
 docker compose down
@@ -104,17 +104,17 @@ docker compose down
 
 ---
 
-## 🔑 API Keys — How They Work
+##  API Keys - How They Work
 
 | Provider | Key prefix | Free tier? | How to get |
 |----------|-----------|-----------|-----------| 
-| **Groq** ⭐ recommended | `gsk_...` | ✅ Yes, fast | [console.groq.com/keys](https://console.groq.com/keys) |
-| **Google Gemini** | `AIza...` | ✅ Yes | [aistudio.google.com](https://aistudio.google.com) |
-| **OpenAI** | `sk-...` | ❌ Paid | [platform.openai.com](https://platform.openai.com) |
+| **Groq**  recommended | `gsk_...` |  Yes, fast | [console.groq.com/keys](https://console.groq.com/keys) |
+| **Google Gemini** | `AIza...` |  Yes | [aistudio.google.com](https://aistudio.google.com) |
+| **OpenAI** | `sk-...` |  Paid | [platform.openai.com](https://platform.openai.com) |
 
 **Two ways to provide a key:**
 
-**A) In the UI** (easiest — per session, no restart needed)
+**A) In the UI** (easiest - per session, no restart needed)
 - Click **"Set AI Key"** in the top-right header
 
 **B) In `.env`** (sets a default for all users)
@@ -126,7 +126,7 @@ AI_MODEL=llama-3.1-8b-instant
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 cv-evaluator/
@@ -187,7 +187,7 @@ cv-evaluator/
 
 ---
 
-## 🔄 API Endpoints
+##  API Endpoints
 
 | Method | Endpoint | Description | AI Key? |
 |--------|----------|-------------|---------|
@@ -217,7 +217,7 @@ Full pipeline (`/api/evaluate/*`) returns:
 
 ---
 
-## 🛠️ Common Dev Tasks
+##  Common Dev Tasks
 
 ### Rebuild after code changes
 ```bash
@@ -253,7 +253,7 @@ docker compose up --build
 ```
 
 ### Add a new job role
-Edit `backend/data/roles_criteria.json` — add a new entry:
+Edit `backend/data/roles_criteria.json` - add a new entry:
 ```json
 {
   "id": "your_role_id",
@@ -266,7 +266,7 @@ Edit `backend/data/roles_criteria.json` — add a new entry:
   "experience_signals": ["deployed", "automated"]
 }
 ```
-No code changes needed — the backend loads roles dynamically and the Career Advisor auto-includes new roles.
+No code changes needed - the backend loads roles dynamically and the Career Advisor auto-includes new roles.
 
 ### Hit the API directly
 ```bash
@@ -295,7 +295,7 @@ curl -X POST http://localhost:8000/api/bullet-rewrite \
 
 ---
 
-## 🐳 Docker Swarm (Production-Style Deploy)
+##  Docker Swarm (Production-Style Deploy)
 
 ### On Windows via WSL (Ubuntu)
 
@@ -319,22 +319,22 @@ export AI_API_KEY="gsk_your_key_here"
 
 ---
 
-## 🚨 Troubleshooting
+##  Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
 | `docker: command not found` in WSL | Enable WSL Integration in Docker Desktop → Settings → Resources → WSL Integration |
 | `permission denied /var/run/docker.sock` | Run `sudo usermod -aG docker $USER && newgrp docker` |
 | `Port 8000/3000 already allocated` | Run `docker compose down`, wait 5s, retry |
-| Backend keeps restarting | DB not ready yet — normal on first start, entrypoint.sh retries migrations |
+| Backend keeps restarting | DB not ready yet - normal on first start, entrypoint.sh retries migrations |
 | AI evaluation returns error | Check your API key prefix: `gsk_` = Groq, `AIza` = Gemini, `sk-` = OpenAI |
 | Django admin shows 500 error | Run `docker compose exec backend python manage.py createsuperuser` first |
-| Frontend shows blank page | Run `docker compose logs frontend` — check nginx startup |
+| Frontend shows blank page | Run `docker compose logs frontend` - check nginx startup |
 | `ImproperlyConfigured: DATABASE_URL` | Ensure `.env` file exists and has valid Postgres credentials |
 
 ---
 
-## 👥 Contributing
+##  Contributing
 
 1. **Fork / branch** off `main`
 2. Make changes locally with `docker compose up --build`
@@ -344,4 +344,4 @@ export AI_API_KEY="gsk_your_key_here"
 
 ---
 
-*Keep this file updated as the project evolves — it's the single source of truth for new contributors.*
+*Keep this file updated as the project evolves - it's the single source of truth for new contributors.*
