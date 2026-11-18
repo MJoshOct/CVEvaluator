@@ -27,6 +27,7 @@ import {
   IconAlertTriangle,
   IconRefresh
 } from './Icons';
+import { AdminServicesIcon } from './AdminIcons';
 
 export default function AdminKeyManager() {
   // ---------------------------------------------------------------------------
@@ -332,12 +333,12 @@ export default function AdminKeyManager() {
   // 9. Component Render
   // ---------------------------------------------------------------------------
   return (
-    <div style={{ marginTop: 24 }}>
+    <div className="admin-settings-page" style={{ marginTop: 8 }}>
       {/* --- SYSTEM API KEY POOL (GROQ, GEMINI, OPENAI) --- */}
       <div className="card" style={{ borderTop: '3px solid var(--accent)' }}>
         <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span>System Multi-API Key Pool (Groq / Gemini / OpenAI)</span>
+            <span className="admin-title-with-icon"><AdminServicesIcon width={19} height={19} />System AI key pool</span>
             <span
               className="tag tag-blue"
               style={{ fontSize: '0.8rem', padding: '4px 10px', fontWeight: 700, letterSpacing: '0.02em' }}
@@ -590,7 +591,7 @@ export default function AdminKeyManager() {
       {/* --- GOOGLE OAUTH CONFIGURATION --- */}
       <div className="card" style={{ marginTop: 24, borderTop: '3px solid var(--purple)' }}>
         <div className="card-title">
-          <span>Google OAuth 2.0 Dynamic Settings</span>
+          <span className="admin-title-with-icon"><AdminServicesIcon width={19} height={19} />Google OAuth settings</span>
         </div>
 
         <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 14 }}>

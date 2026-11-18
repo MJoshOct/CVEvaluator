@@ -1,0 +1,21 @@
+# Environment variables
+.env
+.env.local
+*.env
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.pytest_cache/
+*.db
+*.sqlite3
+*.sqlite
+data/

@@ -187,7 +187,7 @@ export default function AuthGate({ children }) {
               </span>
             </div>
             <span className={`user-role-badge ${isUserAdmin ? 'admin-badge' : 'user-badge'}`} style={{ display: 'inline-flex' }}>
-              {isUserAdmin ? '👑 Administrator' : '👤 Candidate User'}
+              {isUserAdmin ? 'Administrator' : 'Candidate User'}
             </span>
           </div>
 
@@ -843,7 +843,7 @@ export default function AuthGate({ children }) {
                   <label className="auth-label">Assigned Role</label>
                   {checkIsAdminIdentity(mockGoogleEmail, '') && (
                     <span style={{ fontSize: '0.74rem', color: '#f59e0b', fontWeight: 600 }}>
-                      👑 Administrator access enforced for this identity
+                      Administrator access enforced for this identity
                     </span>
                   )}
                 </div>

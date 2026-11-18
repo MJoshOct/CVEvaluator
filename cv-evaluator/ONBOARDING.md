@@ -1,10 +1,10 @@
-﻿#  CV Evaluator - Developer Onboarding Guide
+﻿# CV Evaluator - Developer Onboarding Guide
 
 Welcome to the **CV Evaluator** project! This guide gets any new team member running the app locally in under 10 minutes.
 
 ---
 
-##  What This Project Does
+## What This Project Does
 
 A **9-feature AI-powered CV/Resume evaluation system** with 4 app modes:
 
@@ -28,7 +28,7 @@ Bullet Generator            Interview Prep
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -41,7 +41,7 @@ Bullet Generator            Interview Prep
 
 ---
 
-##  Quickstart - Running Locally (5 minutes)
+## Quickstart - Running Locally (5 minutes)
 
 ### Prerequisites
 
@@ -104,7 +104,7 @@ docker compose down
 
 ---
 
-##  API Keys - How They Work
+## API Keys - How They Work
 
 | Provider | Key prefix | Free tier? | How to get |
 |----------|-----------|-----------|-----------| 
@@ -126,7 +126,7 @@ AI_MODEL=llama-3.1-8b-instant
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 cv-evaluator/
@@ -187,20 +187,26 @@ cv-evaluator/
 
 ---
 
-##  API Endpoints
+## API Endpoints
 
-| Method | Endpoint | Description | AI Key? |
-|--------|----------|-------------|---------|
-| `GET` | `/health` | Health + DB connectivity check | No |
-| `GET` | `/api/roles` | List all 9 role rubrics | No |
-| `POST` | `/api/evaluate/upload` | Full pipeline: file upload | Optional |
-| `POST` | `/api/evaluate/text` | Full pipeline: pasted CV text | Optional |
-| `GET` | `/api/history` | Last 20 evaluations from DB | No |
-| `GET` | `/api/history/{id}` | Single evaluation by ID | No |
-| `POST` | `/api/jd-match/text` | CV text + job description → match report | Required |
-| `POST` | `/api/jd-match/upload` | CV file + job description → match report | Required |
-| `POST` | `/api/bullet-rewrite` | Weak bullets → STAR format rewrites | Required |
-| `POST` | `/api/interview-prep` | CV + role → interview Q&A bank | Required |
+| Method | Endpoint | Description | Auth / Key? |
+|--------|----------|-------------|-------------|
+| `GET` | `/health` | Health + DB connectivity check | None |
+| `GET` | `/api/roles` | List all 9 role rubrics | None |
+| `POST` | `/api/evaluate/upload` | Full pipeline: file upload | Optional AI Key |
+| `POST` | `/api/evaluate/text` | Full pipeline: pasted CV text | Optional AI Key |
+| `GET` | `/api/history` | Last evaluations from DB | User Auth |
+| `GET` | `/api/history/{id}` | Single evaluation details by ID | User Auth |
+| `POST` | `/api/jd-match/text` | CV text + job description → match report | AI Key |
+| `POST` | `/api/jd-match/upload` | CV file + job description → match report | AI Key |
+| `POST` | `/api/bullet-rewrite` | Weak bullets → STAR format rewrites | AI Key |
+| `POST` | `/api/interview-prep` | CV + role → interview Q&A bank (also `/api/tools/interview-prep`) | AI Key |
+| `GET` | `/api/auth/oauth-config` | Public client discovery of active Google Client ID | None |
+| `GET/POST`| `/api/check-models` | Test API key connectivity & model readiness | AI Key |
+| `GET/POST`| `/api/admin/system-keys` | List & add encrypted AI API keys to database pool | Admin Auth |
+| `POST` | `/api/admin/system-keys/{id}/toggle` | Enable or disable a system key | Admin Auth |
+| `DELETE` | `/api/admin/system-keys/{id}` | Permanently delete a system key | Admin Auth |
+| `GET/POST`| `/api/admin/oauth-config` | View (masked) & update Google OAuth credentials | Admin Auth |
 
 Full pipeline (`/api/evaluate/*`) returns:
 ```json
@@ -217,7 +223,7 @@ Full pipeline (`/api/evaluate/*`) returns:
 
 ---
 
-##  Common Dev Tasks
+## Common Dev Tasks
 
 ### Rebuild after code changes
 ```bash
@@ -295,7 +301,7 @@ curl -X POST http://localhost:8000/api/bullet-rewrite \
 
 ---
 
-##  Docker Swarm (Production-Style Deploy)
+## Docker Swarm (Production-Style Deploy)
 
 ### On Windows via WSL (Ubuntu)
 
@@ -319,7 +325,7 @@ export AI_API_KEY="gsk_your_key_here"
 
 ---
 
-##  Troubleshooting
+## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
@@ -334,7 +340,7 @@ export AI_API_KEY="gsk_your_key_here"
 
 ---
 
-##  Contributing
+## Contributing
 
 1. **Fork / branch** off `main`
 2. Make changes locally with `docker compose up --build`

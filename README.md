@@ -15,7 +15,7 @@ The platform features 4 distinct operation modes:
    - **Stage 2a: Predefined Role Matching** - Matches skills against comprehensive industry criteria rubrics.
    - **Stage 2b: Keyword Gap Analysis** - Identifies matched and missing high-impact industry keywords.
    - **Stage 2c: Career Alignment** - Evaluates career trajectory and progression fit.
-   - **Stage 3: AI Deep Review** - LLM-driven qualitative review providing strengths, weaknesses, and portfolio project suggestions.
+   - **Stage 3: AI Deep Review** - LLM-driven qualitative review providing strengths, weaknesses, and portfolio project suggestions grounded strictly in the candidate's existing experience.
 
 2. **JD Matcher (Job Description Compatibility)**
    - Upload a CV and paste a target job description to get a percentage compatibility score, requirement-by-requirement comparison, and interview preparation advice.
@@ -24,7 +24,7 @@ The platform features 4 distinct operation modes:
    - Automatically benchmarks a CV across 9 tech roles (Software Development, Frontend, Backend, Full Stack, Data Science, DevOps, Mobile, QA, and Cybersecurity) to show strongest career fit.
 
 4. **AI Career Tools**
-   - **STAR Bullet Generator:** Rewrites weak, passive resume bullets into quantifiable STAR-format impact statements.
+   - **STAR Bullet Generator:** Rewrites weak, passive resume bullets into quantifiable STAR-format impact statements (without inventing fake metrics).
    - **Interview Prep Bank:** Generates targeted technical, project-based, and behavioral interview questions tailored to the candidate's CV and chosen role.
 
 ---
@@ -34,9 +34,11 @@ The platform features 4 distinct operation modes:
 The system includes an Administrator Management Console with enterprise security:
 
 - **Multi-API Key Pool:** Admins can configure multiple API keys for Groq (Free Tier), Google Gemini, or OpenAI. The evaluator automatically rotates between healthy keys if rate limits (HTTP 429) occur.
-- **Dynamic Google OAuth 2.0:** Google Client ID and Client Secret can be configured dynamically through the Admin UI.
+- **Failover Protection:** Automatic failover between high-performance English text models (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `deepseek-r1-distill-llama-70b`, `qwen-2.5-32b`, `gemma2-9b-it`), with non-English and audio models automatically excluded.
+- **Dynamic Google OAuth 2.0:** Google Client ID and Client Secret can be configured dynamically through the Admin UI. No credentials or keys are hardcoded in the frontend.
 - **Encrypted at Rest:** All keys and secrets are encrypted in PostgreSQL using symmetric cryptography (HMAC-SHA256 authenticated cipher derived from the server secret key).
-- **Key Masking:** Secrets are never exposed in plaintext in the UI or over public APIs (e.g. gsk_������������3aB9).
+- **Key & Client ID Masking:** Secrets and sensitive IDs are never exposed in plaintext in the UI or over public APIs (e.g. `gsk_••••••••••••3aB9`, `••••••••••••.apps.googleusercontent.com`).
+- **Strict Factual Grounding:** AI prompts are engineered to prevent hallucinations. The AI only improves, polishes, and structures what is already in the candidate's CV—it will not invent unmentioned tools, fake jobs, or fabricated metrics.
 - **Smart Re-Authentication:**
   - **Password Accounts:** Admins who logged in with a password must re-enter their administrator password before adding, deleting, or editing system keys.
   - **Google OAuth Accounts:** Admins authenticated via Google Sign-In have their active session token validated automatically without a password prompt.
@@ -47,11 +49,11 @@ The system includes an Administrator Management Console with enterprise security
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite, Tailwind CSS, Modern UI Components |
+| Frontend | React 18, Vite, Modern UI Components |
 | Backend | Python 3.11, Django 4.2, Django REST Framework |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 16 (Stored in isolated Docker volume) |
 | Containerization | Docker Compose (Dev) & Docker Swarm (Prod) |
-| AI Providers | Groq (Llama 3.3 / 3.1), Google Gemini (1.5 Flash), OpenAI |
+| AI Providers | Groq (Llama 3.3 / 3.1, DeepSeek R1 Distill), Google Gemini, OpenAI |
 | WSGI Server | Gunicorn |
 
 ---
@@ -62,17 +64,17 @@ The system includes an Administrator Management Console with enterprise security
 Install Docker Desktop and ensure Docker engine is running.
 
 ### 2. Configure Environment
-`ash
+```bash
 cd cv-evaluator
 # Copy example environment file
 cp .env.example .env
-`
-*(Optionally add an initial AI key or configure Google OAuth credentials in .env, or configure them later directly via the Admin Dashboard).*
+```
+*(Optionally add an initial AI key or configure Google OAuth credentials in `.env`, or configure them later directly via the Admin Dashboard).*
 
 ### 3. Start the Application
-`ash
+```bash
 docker compose up --build
-`
+```
 
 ### 4. Access the Application
 - Web UI: http://localhost:3000

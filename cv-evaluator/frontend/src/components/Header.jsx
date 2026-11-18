@@ -138,7 +138,7 @@ export default function Header() {
                   <div className="profile-dropdown-meta-row">
                     <span className="profile-dropdown-meta-label">Access Level</span>
                     <span className={`user-role-badge ${isAdmin ? 'admin-badge' : 'user-badge'}`} style={{ padding: '2px 8px', fontSize: '0.72rem' }}>
-                      {isAdmin ? '👑 Administrator' : '👤 Candidate'}
+                      {isAdmin ? 'Administrator' : 'Candidate'}
                     </span>
                   </div>
                   <div className="profile-dropdown-meta-row">

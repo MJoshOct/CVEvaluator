@@ -6,6 +6,7 @@ import JDMatchPanel from './components/JDMatchPanel';
 import BulletGeneratorPanel from './components/BulletGeneratorPanel';
 import InterviewPrepPanel from './components/InterviewPrepPanel';
 import UserDashboard from './components/UserDashboard';
+import { AdminConsoleIcon, AdminOverviewIcon } from './components/AdminIcons';
 import ApiKeyModal from './components/ApiKeyModal';
 import ImprovedCvModal from './components/ImprovedCvModal';
 import AuthGate from './components/AuthGate';
@@ -18,6 +19,9 @@ import {
   IconSparkles,
   IconMic,
   IconCrown,
+  IconChart,
+  IconCompass,
+  IconCheck,
 } from './components/Icons';
 
 const DEFAULT_ROLES = [
@@ -30,7 +34,7 @@ const DEFAULT_ROLES = [
 function AppContent() {
   const { user, isAdmin, token } = useAuth();
 
-  const [activeMode, setActiveMode] = useState('evaluator'); // 'evaluator' | 'jd-match' | 'tools' | 'admin-dashboard'
+  const [activeMode, setActiveMode] = useState('overview'); // overview | evaluator | jd-match | tools | history | admin-dashboard
   const [activeTool, setActiveTool] = useState('bullets');   // 'bullets' | 'interview'
 
   // Common and Evaluator Mode state
@@ -52,10 +56,17 @@ function AppContent() {
   if (isAdmin) {
     availableModes.push({
       id: 'admin-dashboard',
-      label: 'Admin Analytics',
+      label: 'Admin Console',
       Icon: IconCrown,
     });
   }
+
+  const navigationItems = [
+    { id: 'overview', label: 'Overview', Icon: IconChart },
+    ...availableModes.filter((mode) => mode.id !== 'admin-dashboard'),
+    { id: 'history', label: 'History', Icon: IconClock },
+    ...(isAdmin ? [availableModes.find((mode) => mode.id === 'admin-dashboard')] : []),
+  ].filter(Boolean);
 
   // Ensure active mode is valid if role changes
   useEffect(() => {
@@ -145,34 +156,130 @@ function AppContent() {
     }
   };
 
-  const handleOpenRecord = (record) => {
-    setEvaluationResult(record);
+  const handleOpenRecord = async (recordOrId) => {
     setActiveMode('evaluator');
+    setErrorMessage(null);
+    let record = recordOrId;
+    if (recordOrId == null || typeof recordOrId !== 'object') {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/history/${recordOrId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Could not load this evaluation report.');
+        }
+        record = await res.json();
+      } catch (err) {
+        setErrorMessage(err.message || 'Could not load this evaluation report.');
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    setEvaluationResult(record);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  return (
-    <div className="app-container">
-      {/* Top Header */}
-      <Header />
+  const activePage = navigationItems.find((item) => item.id === activeMode);
+  const displayName = user?.displayName || user?.username || 'there';
 
-      {/* Mode Switcher Tabs */}
-      <nav className="mode-tabs">
-        {availableModes.map((mode) => {
-          const ModeIcon = mode.Icon;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              className={`mode-tab ${activeMode === mode.id ? 'active' : ''}`}
-              onClick={() => setActiveMode(mode.id)}
-            >
-              <ModeIcon width={16} height={16} style={{ marginRight: 6 }} />
-              {mode.label}
-            </button>
-          );
-        })}
-      </nav>
+  return (
+    <div className="workspace-shell">
+      <aside className="workspace-sidebar" aria-label="Main navigation">
+        <div className="workspace-brand">
+          <span className="workspace-brand-mark"><IconSparkles width={19} height={19} /></span>
+          <span><strong>CareerCanvas</strong><small>YOUR CAREER WORKSPACE</small></span>
+        </div>
+        <div className="workspace-nav-label">WORKSPACE</div>
+        <nav className="workspace-nav">
+          {navigationItems.map((item) => {
+            const NavIcon = item.id === 'admin-dashboard' ? AdminConsoleIcon : item.Icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`workspace-nav-item ${activeMode === item.id ? 'active' : ''}`}
+                onClick={() => setActiveMode(item.id)}
+                aria-current={activeMode === item.id ? 'page' : undefined}
+              >
+                <NavIcon width={18} height={18} />
+                <span>{item.id === 'evaluator' ? 'Resume review' : item.id === 'jd-match' ? 'Job match' : item.id === 'tools' ? 'AI tools' : item.id === 'admin-dashboard' ? 'Admin console' : item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="workspace-sidebar-bottom">
+          <div className="sidebar-tip-icon"><IconSparkles width={16} height={16} /></div>
+          <strong>Small steps add up</strong>
+          <p>Use your feedback to make one focused improvement at a time.</p>
+        </div>
+      </aside>
+
+      <div className="workspace-main">
+        <div className="workspace-topbar">
+          <div className="workspace-breadcrumb"><span>Workspace</span><b>/</b><strong>{activePage?.label || 'Overview'}</strong></div>
+          <Header />
+        </div>
+
+        <main className="workspace-content">
+          {activeMode === 'overview' && (
+            <section className="overview-page">
+              <div className="overview-welcome">
+                <div>
+                  <div className="eyebrow">YOUR CAREER TOOLKIT</div>
+                  <h1>Good to see you, {displayName}</h1>
+                  <p>Get clear feedback on your resume and take the next step with confidence.</p>
+                </div>
+                <div className="welcome-orbit" aria-hidden="true"><span><AdminOverviewIcon width={24} height={24} /></span><i /><b /></div>
+              </div>
+
+              <div className="overview-hero">
+                <div className="overview-hero-copy">
+                  <span className="hero-kicker">A stronger application starts here</span>
+                  <h2>Make your resume work harder.</h2>
+                  <p>Get an ATS check, role alignment, skill gaps, and practical feedback in one review.</p>
+                  <button type="button" className="hero-action" onClick={() => setActiveMode('evaluator')}>
+                    <IconFile width={16} height={16} /> Review my resume <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="hero-illustration" aria-hidden="true">
+                  <div className="hero-doc"><div /><div /><div /><div /></div>
+                  <div className="hero-score"><span>ATS SCORE</span><strong>82</strong><i>+6 this week</i></div>
+                </div>
+              </div>
+
+              <div className="overview-section-heading"><div><h2>Choose your next step</h2><p>Jump straight into the tool you need.</p></div></div>
+              <div className="overview-action-grid">
+                <button type="button" className="overview-action-card" onClick={() => setActiveMode('jd-match')}>
+                  <span className="action-icon violet"><IconTarget width={19} height={19} /></span><span className="action-card-text"><strong>Match a job</strong><small>Compare your resume to a job post.</small></span><span className="action-arrow">→</span>
+                </button>
+                <button type="button" className="overview-action-card" onClick={() => setActiveMode('evaluator')}>
+                  <span className="action-icon mint"><IconCompass width={19} height={19} /></span><span className="action-card-text"><strong>Explore career fit</strong><small>See roles that match your strengths.</small></span><span className="action-arrow">→</span>
+                </button>
+                <button type="button" className="overview-action-card" onClick={() => setActiveMode('tools')}>
+                  <span className="action-icon peach"><IconSparkles width={19} height={19} /></span><span className="action-card-text"><strong>Practice &amp; improve</strong><small>Rewrite bullets or prep for interviews.</small></span><span className="action-arrow">→</span>
+                </button>
+              </div>
+
+              <div className="overview-bottom-grid">
+                <section className="overview-panel recent-panel">
+                  <div className="panel-heading"><div><h2>Recent review</h2><p>Your latest resume feedback.</p></div><button type="button" className="text-action" onClick={() => setActiveMode('history')}>View history →</button></div>
+                  {evaluationResult ? (
+                    <button type="button" className="recent-review-row" onClick={() => setActiveMode('evaluator')}>
+                      <span className="recent-file-icon"><IconFile width={18} height={18} /></span>
+                      <span className="recent-review-copy"><strong>{evaluationResult.candidate_name || 'Resume evaluation'}</strong><small>Latest review · Open full report</small></span>
+                      <span className="recent-score">{Math.round(evaluationResult.ats_report?.ats_score || evaluationResult.ats_data?.ats_score || evaluationResult.ats?.ats_score || 0)}<small>/100</small></span>
+                    </button>
+                  ) : (
+                    <div className="recent-empty"><span className="empty-check"><IconCheck width={15} height={15} /></span><span><strong>Your review will appear here</strong><small>Start by uploading a resume or pasting its text.</small></span></div>
+                  )}
+                </section>
+                <section className="overview-panel tip-panel"><span className="tip-badge"><IconSparkles width={16} height={16} /> QUICK TIP</span><h3>Show the impact, not just the task.</h3><p>Whenever you can, add a result, scale, or time saved to experience bullets. Specifics help people understand your contribution.</p><button type="button" className="text-action" onClick={() => setActiveMode('tools')}>Improve a bullet →</button></section>
+              </div>
+            </section>
+          )}
 
       {/* Global Error Message Banner */}
       {errorMessage && activeMode === 'evaluator' && (
@@ -300,8 +407,8 @@ function AppContent() {
       {/* ─────────────────────────────────────────────────────────────
           4. ADMIN DASHBOARD & ANALYTICS MODE
          ───────────────────────────────────────────────────────────── */}
-      {activeMode === 'admin-dashboard' && isAdmin && (
-        <UserDashboard onOpenRecord={handleOpenRecord} />
+      {(activeMode === 'history' || activeMode === 'admin-dashboard') && (isAdmin || activeMode === 'history') && (
+        <UserDashboard adminView={activeMode === 'admin-dashboard'} onOpenRecord={handleOpenRecord} />
       )}
 
       {/* Shared Modals */}
@@ -317,6 +424,17 @@ function AppContent() {
         onClose={() => setIsImprovedCvModalOpen(false)}
         evaluationResult={evaluationResult}
       />
+      </main>
+      </div>
+      <nav className="mobile-workspace-nav" aria-label="Mobile navigation">
+        {(isAdmin
+          ? navigationItems.filter((item) => ['overview', 'evaluator', 'jd-match', 'history', 'admin-dashboard'].includes(item.id))
+          : navigationItems.slice(0, 5)
+        ).map((item) => {
+          const NavIcon = item.id === 'admin-dashboard' ? AdminConsoleIcon : item.Icon;
+          return <button key={item.id} type="button" className={activeMode === item.id ? 'active' : ''} onClick={() => setActiveMode(item.id)} aria-label={item.label}><NavIcon width={19} height={19} /><span>{item.id === 'evaluator' ? 'Resume' : item.id === 'jd-match' ? 'Match' : item.id === 'overview' ? 'Home' : item.label.replace('Career ', '')}</span></button>;
+        })}
+      </nav>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import AdminKeyManager from './AdminKeyManager';
+import { AdminConsoleIcon, AdminEvaluationsIcon, AdminOverviewIcon, AdminServicesIcon, AdminUsersIcon } from './AdminIcons';
+import { IconCheck, IconRefresh, IconUser } from './Icons';
 
 const EMPTY_STATS = {
   total_evaluations: 0,
@@ -26,15 +28,16 @@ function scoreColor(score) {
 }
 
 function formatDate(iso) {
-  if (!iso) return '';
+  if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    + '  '
+    + ' · '
     + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
+export default function UserDashboard({ onOpenRecord, refreshKey = 0, adminView = false }) {
   const { token, isAdmin, getAllUsers, updateUserRole, clearAllDatabaseUsers } = useAuth();
+  const canManageAdmin = Boolean(isAdmin && adminView);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [history, setHistory] = useState([]);
   const [usersList, setUsersList] = useState([]);
@@ -42,6 +45,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [adminPage, setAdminPage] = useState('overview');
 
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -65,7 +69,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
       setLoading(false);
     }
 
-    if (isAdmin && getAllUsers) {
+    if (canManageAdmin && getAllUsers) {
       setLoadingUsers(true);
       try {
         const uList = await getAllUsers();
@@ -103,6 +107,18 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
   const roleEntries = Object.entries(stats.role_breakdown || {});
   const maxRoleCount = roleEntries.reduce((m, [, n]) => Math.max(m, n), 1);
   const rows = history.length ? history : (stats.recent_evaluations || []);
+  const visibleRows = canManageAdmin && adminPage === 'overview' ? rows.slice(0, 5) : rows;
+  const showStats = !canManageAdmin || adminPage === 'overview';
+  const showRoleMix = !canManageAdmin || adminPage === 'overview';
+  const showEvaluations = !canManageAdmin || adminPage === 'overview' || adminPage === 'evaluations';
+  const showAccounts = canManageAdmin && adminPage === 'accounts';
+  const showAiSettings = canManageAdmin && adminPage === 'ai-settings';
+  const adminPageCopy = {
+    overview: ['System overview', 'A live view of evaluations, account activity, and AI services.'],
+    evaluations: ['Evaluation records', 'Review and reopen resume evaluation reports.'],
+    accounts: ['Accounts & access', 'Manage registered users and application roles.'],
+    'ai-settings': ['AI services & sign-in', 'Manage provider keys, automatic failover, and Google OAuth.'],
+  }[adminPage] || ['System overview', 'Manage evaluation activity, user access, and AI service configuration.'];
 
   return (
     <div>
@@ -115,34 +131,21 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 'var(--radius-sm)',
-              background: '#ffffff',
-              border: '1px solid rgba(37, 99, 235, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.6rem',
-              flexShrink: 0,
-            }}
-          >
-            
+          <div className="admin-page-heading-icon">
+              {canManageAdmin ? <AdminOverviewIcon width={23} height={23} /> : <IconUser width={23} height={23} />}
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
-              {isAdmin ? 'Admin Console & Analytics' : 'Candidate Evaluation History'}
+            <h2 className="admin-page-heading">
+              {canManageAdmin ? adminPageCopy[0] : isAdmin ? 'System evaluation history' : 'Candidate Evaluation History'}
             </h2>
-            <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-              {isAdmin
-                ? 'System-wide evaluation metrics, legitimacy verification pass rates, and candidate records management.'
-                : 'Personal evaluation scores, ATS compliance metrics, and resume feedback history.'}
+            <p className="admin-page-description">
+              {canManageAdmin
+                ? adminPageCopy[1]
+                : isAdmin ? 'Browse evaluation records and reopen full reports.' : 'Personal evaluation scores, ATS compliance metrics, and resume feedback history.'}
             </p>
           </div>
           <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
-            {loading ? 'Refreshing' : ' Refresh'}
+            {loading ? 'Refreshing' : <><IconRefresh width={14} height={14} /> Refresh</>}
           </button>
         </div>
       </div>
@@ -156,7 +159,22 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
         </div>
       )}
 
-      <div className="dash-stats-grid">
+      {canManageAdmin && (
+        <nav className="admin-page-tabs" aria-label="Admin workspace sections">
+          {[
+            ['overview', 'Overview', AdminOverviewIcon],
+            ['evaluations', 'Evaluations', AdminEvaluationsIcon],
+            ['accounts', 'User accounts', AdminUsersIcon],
+            ['ai-settings', 'AI & OAuth', AdminServicesIcon],
+          ].map(([id, label, PageIcon]) => (
+            <button key={id} type="button" className={`admin-page-tab ${adminPage === id ? 'active' : ''}`} onClick={() => setAdminPage(id)} aria-current={adminPage === id ? 'page' : undefined}>
+              <PageIcon width={17} height={17} />{label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {showStats && <div className="dash-stats-grid">
         <div className="dash-stat-card">
           <span className="dash-stat-label">Evaluations</span>
           <b className="dash-stat-value">{stats.total_evaluations}</b>
@@ -184,9 +202,9 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
             {Math.round(stats.avg_ai_score)}
           </b>
         </div>
-      </div>
+      </div>}
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      {showRoleMix && <div className="card admin-feature-card" style={{ marginBottom: 20 }}>
         <div className="card-title">
           <span>Target role mix</span>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
@@ -212,18 +230,18 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
-      <div className="card">
+      {showEvaluations && <div className="card admin-feature-card">
         <div className="card-title">
-          <span>Recent evaluations</span>
+          <span>{canManageAdmin && adminPage === 'overview' ? 'Recent evaluations' : canManageAdmin ? 'Evaluation records' : 'Recent evaluations'}</span>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            Click a row to reopen the full report
+            {canManageAdmin && adminPage === 'overview' ? 'Latest 5 records · click a row to open' : 'Click a row to reopen the full report'}
           </span>
         </div>
-        {loading && rows.length === 0 ? (
+        {loading && visibleRows.length === 0 ? (
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading history</p>
-        ) : rows.length === 0 ? (
+        ) : visibleRows.length === 0 ? (
           <div className="empty-state" style={{ padding: '32px 12px' }}>
             <div className="empty-state-icon"></div>
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 6 }}>Nothing here yet</h2>
@@ -246,7 +264,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((item) => (
+                {visibleRows.map((item) => (
                   <tr
                     key={item.id}
                     onClick={() => onOpenRecord?.(item.id)}
@@ -262,13 +280,13 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
                     </td>
                     <td>{roleLabel(item.target_role)}</td>
                     <td style={{ color: scoreColor(item.ats_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.ats_score != null ? Math.round(item.ats_score) : ''}
+                      {item.ats_score != null ? Math.round(item.ats_score) : '—'}
                     </td>
                     <td style={{ color: scoreColor(item.predefined_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.predefined_score != null ? `${Math.round(item.predefined_score)}%` : ''}
+                      {item.predefined_score != null ? `${Math.round(item.predefined_score)}%` : '—'}
                     </td>
                     <td style={{ color: scoreColor(item.ai_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.ai_score != null ? Math.round(item.ai_score) : ''}
+                      {item.ai_score != null ? Math.round(item.ai_score) : '—'}
                     </td>
                     <td className="dash-date">{formatDate(item.created_at)}</td>
                     <td>
@@ -278,7 +296,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
                         disabled={deletingId === item.id}
                         onClick={(e) => handleDelete(item.id, e)}
                       >
-                        {deletingId === item.id ? '' : 'Delete'}
+                        {deletingId === item.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </td>
                   </tr>
@@ -287,16 +305,15 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
             </table>
           </div>
         )}
-      </div>
+      </div>}
 
-      {isAdmin && <AdminKeyManager />}
+      {showAiSettings && <div className="admin-feature-card"><AdminKeyManager /></div>}
 
       {/*  ADMIN ACCOUNTS & DATABASE ROLES  */}
-      {isAdmin && (
+      {showAccounts && (
         <div className="card" style={{ marginTop: 24, borderTop: '3px solid var(--purple)' }}>
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.1rem' }}></span>
               <span>System User Accounts &amp; Database Roles</span>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -350,7 +367,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
                       <tr key={u.id || u.username} className="dash-table-row">
                         <td>
                           <div style={{ fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {isAccountAdmin && <span title="Administrator"></span>}
+                            {isAccountAdmin && <AdminConsoleIcon width={14} height={14} title="Administrator" />}
                             <span>@{u.username}</span>
                           </div>
                           {u.display_name && u.display_name !== u.username && (
@@ -368,13 +385,13 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0 }) {
                             className={`user-role-badge ${isAccountAdmin ? 'admin-badge' : 'user-badge'}`}
                             style={{ display: 'inline-flex' }}
                           >
-                            {isAccountAdmin ? ' Administrator' : ' Candidate User'}
+                            {isAccountAdmin ? 'Administrator' : 'Candidate User'}
                           </span>
                         </td>
                         <td>
                           <button
                             type="button"
-                            className="btn-ghost"
+                            className="btn-ghost account-role-action"
                             style={{ fontSize: '0.78rem', padding: '4px 8px' }}
                             onClick={async () => {
                               const targetRole = isAccountAdmin ? 'user' : 'admin';

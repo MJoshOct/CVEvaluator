@@ -5,17 +5,17 @@ set -e
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
 # ─── 1. Swarm init ─────────────────────────────────────────────────────────────
-echo -e "${YELLOW}🐳 Checking Docker Swarm status...${NC}"
+echo -e "${YELLOW}[INFO] Checking Docker Swarm status...${NC}"
 if [ "$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" != "active" ]; then
-    echo -e "${YELLOW}⚡ Initializing Docker Swarm (single-node)...${NC}"
+    echo -e "${YELLOW}[INIT] Initializing Docker Swarm (single-node)...${NC}"
     docker swarm init
 else
-    echo -e "${GREEN}✓ Docker Swarm is already active.${NC}"
+    echo -e "${GREEN}[OK] Docker Swarm is already active.${NC}"
 fi
 
 # ─── 2. Remove old stack if running (prevents port conflicts) ──────────────────
 if docker stack ls 2>/dev/null | grep -q "cv-stack"; then
-    echo -e "${YELLOW}⚠️  Removing existing cv-stack to avoid port conflicts...${NC}"
+    echo -e "${YELLOW}[WARN] Removing existing cv-stack to avoid port conflicts...${NC}"
     docker stack rm cv-stack
     echo -n "   Waiting for stack teardown"
     until ! docker stack ls 2>/dev/null | grep -q "cv-stack"; do
@@ -26,15 +26,15 @@ if docker stack ls 2>/dev/null | grep -q "cv-stack"; then
 fi
 
 # ─── 3. Build images ───────────────────────────────────────────────────────────
-echo -e "\n${YELLOW}🔨 Building production container images...${NC}"
+echo -e "\n${YELLOW}[BUILD] Building production container images...${NC}"
 docker compose build --no-cache
 
 # ─── 4. Deploy stack ──────────────────────────────────────────────────────────
-echo -e "\n${YELLOW}🚀 Deploying stack 'cv-stack' to Docker Swarm...${NC}"
+echo -e "\n${YELLOW}[DEPLOY] Deploying stack 'cv-stack' to Docker Swarm...${NC}"
 docker stack deploy -c docker-stack.yml cv-stack
 
 # ─── 5. Wait for services to be ready ─────────────────────────────────────────
-echo -e "\n${YELLOW}⏳ Waiting for all services to start (up to 90s)...${NC}"
+echo -e "\n${YELLOW}[WAIT] Waiting for all services to start (up to 90s)...${NC}"
 TIMEOUT=90
 ELAPSED=0
 INTERVAL=5
@@ -51,7 +51,7 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
     echo -e "   db: ${DB_REPLICAS}  backend: ${BACKEND_REPLICAS}  frontend: ${FRONTEND_REPLICAS}"
 
     if [ "$BACKEND_READY" = "1" ] && [ "$FRONTEND_READY" = "1" ] && [ "$DB_READY" = "1" ]; then
-        echo -e "\n${GREEN}✅ All services are running!${NC}"
+        echo -e "\n${GREEN}[SUCCESS] All services are running!${NC}"
         break
     fi
 
@@ -60,19 +60,19 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
 done
 
 if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo -e "\n${RED}⚠️  Timed out waiting. Check logs below:${NC}"
+    echo -e "\n${RED}[WARN] Timed out waiting. Check logs below:${NC}"
     docker service ls
     echo -e "\nRun: docker service ps cv-stack_backend  (to see why tasks failed)"
 fi
 
 # ─── 6. Summary ────────────────────────────────────────────────────────────────
-echo -e "\n${YELLOW}📊 Final Stack Status:${NC}"
+echo -e "\n${YELLOW}[STATUS] Final Stack Status:${NC}"
 docker stack services cv-stack
 
-echo -e "\n${GREEN}✅ Deployment complete!${NC}"
-echo -e "  🌐 Frontend:         http://localhost:3000"
-echo -e "  🔧 Backend API Docs: http://localhost:8000/docs"
-echo -e "  ❤️  Health check:     http://localhost:8000/health"
+echo -e "\n${GREEN}[SUCCESS] Deployment complete!${NC}"
+echo -e "  Frontend:         http://localhost:3000"
+echo -e "  Backend API Docs: http://localhost:8000/docs"
+echo -e "  Health check:     http://localhost:8000/health"
 echo -e "\n${YELLOW}Useful commands:${NC}"
 echo -e "  docker stack services cv-stack             # check replica counts"
 echo -e "  docker service logs cv-stack_backend       # backend logs"
