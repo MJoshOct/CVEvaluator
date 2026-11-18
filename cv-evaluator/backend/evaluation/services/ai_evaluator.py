@@ -441,6 +441,24 @@ def _call_openai(system_prompt: str, user_prompt: str, api_key: str) -> Dict[str
     raise RuntimeError(f"All OpenAI models exhausted. Attempted: {attempted_models}. Last error: {last_error}")
 
 
+def get_effective_system_ai_key(user_key: Optional[str] = None) -> str:
+    """Retrieves AI key prioritizing user-provided key, then database SystemApiKey, then settings/env."""
+    if user_key and user_key.strip():
+        return user_key.strip()
+    try:
+        from ..models import SystemApiKey
+        active_key_obj = SystemApiKey.objects.filter(is_active=True).order_by('failure_count', '-created_at').first()
+        if active_key_obj:
+            dec = active_key_obj.get_decrypted_key()
+            if dec:
+                return dec.strip()
+    except Exception as e:
+        logger.debug(f"Could not load AI key from database: {e}")
+
+    server_key = getattr(settings, "AI_API_KEY", "") or ""
+    return server_key.strip()
+
+
 def _call_provider(
     system_prompt: str,
     user_prompt: str,
@@ -450,9 +468,9 @@ def _call_provider(
     """Unified sync dispatcher with multi-model failover and multi-key fallback."""
     raw_keys = [k.strip() for k in re.split(r'[,;\n]+', api_key or '') if k.strip()]
     if not raw_keys:
-        server_key = getattr(settings, "AI_API_KEY", "")
-        if server_key:
-            raw_keys = [server_key.strip()]
+        fallback = get_effective_system_ai_key()
+        if fallback:
+            raw_keys = [fallback]
 
     last_error = None
     for single_key in raw_keys:
@@ -483,7 +501,7 @@ def evaluate_with_ai(
     """
     Synchronous evaluation of CV using LLM against predefined rubric baselines.
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
 
     if not effective_key:
         return {
@@ -563,7 +581,7 @@ def improve_resume(
     """
     Sync improvement suggestions: summary rewrite, STAR bullet points, grammar, and active phrasing.
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
     if not effective_key:
         return {
             "improved_summary": "Please provide an API key to generate an AI-enhanced professional summary.",
@@ -610,7 +628,7 @@ def match_job_description(
     """
     Sync ATS job description matching.
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
     if not effective_key:
         return {
             "compatibility_score": 0.0,
@@ -665,7 +683,7 @@ def generate_bullets(
     """
     Sync bullet points STAR rewriter.
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
     if not effective_key:
         return {
             "rewrites": [
@@ -714,7 +732,7 @@ def generate_interview_questions(
     """
     Sync interview question generator (4 technical, 3 project, 3 HR).
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
     if not effective_key:
         return {
             "technical_questions": [],
@@ -755,7 +773,7 @@ def check_api_models(api_key: str, requested_provider: Optional[str] = None) -> 
     Checks an API key against models, tests connectivity,
     and returns discovered models with status and auto-switch readiness.
     """
-    effective_key = (api_key or getattr(settings, "AI_API_KEY", "") or "").strip()
+    effective_key = get_effective_system_ai_key(api_key)
     if not effective_key:
         return {
             "valid": False,

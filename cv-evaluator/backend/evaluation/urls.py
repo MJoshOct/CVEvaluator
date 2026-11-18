@@ -21,6 +21,7 @@ urlpatterns = [
     re_path(r'^api/admin/system-keys/(?P<key_id>\d+)/toggle/?$', auth_views.api_admin_toggle_key),
     re_path(r'^api/admin/oauth-config/?$', auth_views.api_admin_oauth_config),
     re_path(r'^api/auth/oauth-config/?$', auth_views.api_auth_public_oauth_config),
+    re_path(r'^api/auth/public-oauth-config/?$', auth_views.api_auth_public_oauth_config),
 
     re_path(r'^api/roles/?$', views.get_roles),
     re_path(r'^api/evaluate/upload/?$', views.evaluate_upload),

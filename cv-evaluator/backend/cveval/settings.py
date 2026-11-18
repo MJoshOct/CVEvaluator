@@ -135,7 +135,7 @@ GOOGLE_ADMIN_EMAILS = [
     e.strip().lower()
     for e in os.environ.get(
         'GOOGLE_ADMIN_EMAILS',
-        'admin@cvevaluator.local,candidate@cvevaluator.local,user@cvevaluator.local'
+        'admin@cvevaluator.local'
     ).split(',')
     if e.strip()
 ]

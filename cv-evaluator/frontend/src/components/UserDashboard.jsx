@@ -28,10 +28,10 @@ function scoreColor(score) {
 }
 
 function formatDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    + ' · '
+    + '  '
     + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -280,13 +280,13 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0, adminView 
                     </td>
                     <td>{roleLabel(item.target_role)}</td>
                     <td style={{ color: scoreColor(item.ats_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.ats_score != null ? Math.round(item.ats_score) : '—'}
+                      {item.ats_score != null ? Math.round(item.ats_score) : ''}
                     </td>
                     <td style={{ color: scoreColor(item.predefined_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.predefined_score != null ? `${Math.round(item.predefined_score)}%` : '—'}
+                      {item.predefined_score != null ? `${Math.round(item.predefined_score)}%` : ''}
                     </td>
                     <td style={{ color: scoreColor(item.ai_score), fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                      {item.ai_score != null ? Math.round(item.ai_score) : '—'}
+                      {item.ai_score != null ? Math.round(item.ai_score) : ''}
                     </td>
                     <td className="dash-date">{formatDate(item.created_at)}</td>
                     <td>
@@ -296,7 +296,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0, adminView 
                         disabled={deletingId === item.id}
                         onClick={(e) => handleDelete(item.id, e)}
                       >
-                        {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === item.id ? '' : 'Delete'}
                       </button>
                     </td>
                   </tr>
@@ -314,6 +314,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0, adminView 
         <div className="card" style={{ marginTop: 24, borderTop: '3px solid var(--purple)' }}>
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '1.1rem' }}></span>
               <span>System User Accounts &amp; Database Roles</span>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -385,7 +386,7 @@ export default function UserDashboard({ onOpenRecord, refreshKey = 0, adminView 
                             className={`user-role-badge ${isAccountAdmin ? 'admin-badge' : 'user-badge'}`}
                             style={{ display: 'inline-flex' }}
                           >
-                            {isAccountAdmin ? 'Administrator' : 'Candidate User'}
+                            {isAccountAdmin ? ' Administrator' : ' Candidate User'}
                           </span>
                         </td>
                         <td>

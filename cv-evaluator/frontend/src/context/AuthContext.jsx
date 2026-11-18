@@ -38,11 +38,7 @@ export function checkIsAdminIdentity(email = '', username = '') {
   const u = (username || '').toLowerCase().trim();
   return (
     u === 'admin' ||
-    u === 'user' ||
-    e === 'admin@cvevaluator.local' ||
-    e === 'candidate@cvevaluator.local' ||
-    e === 'user@cvevaluator.local' ||
-    e.startsWith('user@')
+    e === 'admin@cvevaluator.local'
   );
 }
 
@@ -60,8 +56,8 @@ const BUILT_IN_DEMO_ACCOUNTS = [
     id: 2,
     username: 'user',
     email: 'user@cvevaluator.local',
-    displayName: 'User Admin',
-    role: 'admin',
+    displayName: 'Candidate User',
+    role: 'user',
     passwordPlain: 'User@123',
   },
 ];
@@ -82,7 +78,9 @@ export function AuthProvider({ children }) {
       if (encryptedSession) {
         const decrypted = decryptSessionData(encryptedSession);
         if (decrypted && decrypted.user && decrypted.token) {
-          const isAdmin = checkIsAdminIdentity(decrypted.user.email, decrypted.user.username) || decrypted.user.role === 'admin';
+          const isAdmin = decrypted.user.provider === 'google'
+            ? decrypted.user.role === 'admin'
+            : checkIsAdminIdentity(decrypted.user.email, decrypted.user.username) || decrypted.user.role === 'admin';
           const restoredUser = {
             ...decrypted.user,
             role: isAdmin ? 'admin' : (decrypted.user.role || 'user'),
@@ -104,7 +102,9 @@ export function AuthProvider({ children }) {
 
   // Save session securely
   const persistSession = (userData, userToken) => {
-    const isAdmin = checkIsAdminIdentity(userData.email, userData.username) || userData.role === 'admin';
+    const isAdmin = userData.provider === 'google'
+      ? userData.role === 'admin' || userData.is_staff
+      : checkIsAdminIdentity(userData.email, userData.username) || userData.role === 'admin';
     const finalUser = {
       ...userData,
       role: isAdmin ? 'admin' : (userData.role || 'user'),
@@ -320,113 +320,51 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setAuthError(null);
 
-    const idToken = profileData.id_token || profileData.credential;
-    const email = (profileData.email || '').toLowerCase().trim();
-    const name = profileData.name || '';
-    const chosenRole = profileData.role || 'user';
-    const googleId = profileData.google_id || '';
-
-    const isSpecialAdmin = checkIsAdminIdentity(email, name);
-    const resolvedRole = isSpecialAdmin ? 'admin' : (chosenRole || 'user');
-    const existingHandle = getSavedHandle(email || profileData.email);
+    const credential = profileData.id_token || profileData.credential || profileData.access_token;
+    if (!credential) {
+      const message = 'Google did not return a sign-in credential.';
+      setAuthError(message);
+      setIsLoading(false);
+      return { success: false, error: message };
+    }
 
     try {
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id_token: idToken,
-          credential: idToken,
-          access_token: profileData.access_token || idToken,
-          email,
-          name,
-          role: resolvedRole,
-          google_id: googleId,
+          id_token: credential,
+          access_token: profileData.access_token || credential,
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Google could not verify this account.');
+      if (!data.user || !data.token) throw new Error('The sign-in service returned an incomplete response.');
 
-      if (res.ok) {
-        const data = await res.json();
-        const isAdmin = checkIsAdminIdentity(data.user.email, data.user.username) || isSpecialAdmin || data.user.role === 'admin';
-        const userEmail = data.user.email || email;
-        const savedHandle = existingHandle || getSavedHandle(userEmail);
-        
-        // Use chosen handle if already created, never overwrite with Google account name
-        const finalHandle = savedHandle || data.user.username;
-        const isNew = savedHandle ? false : !!(data.is_new_user || data.needs_username);
-
-        const gUser = {
-          ...data.user,
-          username: finalHandle,
-          displayName: finalHandle,
-          role: isAdmin ? 'admin' : (data.user.role || resolvedRole),
-          provider: 'google',
-          avatarUrl: data.user.avatar_url || profileData.avatarUrl || null,
-          needsUsername: isNew,
-        };
-        persistSession(gUser, data.token);
-        setNeedsUsername(isNew);
-        setIsLoading(false);
-        return { success: true, user: gUser, isNew };
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        if (res.status === 401 || res.status === 400) {
-          throw new Error(errData.error || 'Google token verification failed on server.');
-        }
-      }
-    } catch (e) {
-      console.warn('Google auth endpoint error:', e);
-      // If user successfully selected an account in Google popup, seamlessly proceed to username setup
-      if (email || profileData.email) {
-        const userEmail = (email || profileData.email).toLowerCase().trim();
-        const savedHandle = existingHandle || getSavedHandle(userEmail);
-        const fallbackIsAdmin = checkIsAdminIdentity(userEmail, name) || chosenRole === 'admin';
-        const finalHandle = savedHandle || userEmail.split('@')[0];
-        const isNew = !savedHandle;
-
-        const fallbackGUser = {
-          id: Date.now(),
-          username: finalHandle,
-          email: userEmail,
-          displayName: finalHandle,
-          role: fallbackIsAdmin ? 'admin' : chosenRole,
-          provider: 'google',
-          avatarUrl: profileData.avatarUrl || null,
-          needsUsername: isNew,
-        };
-        const gToken = `token-google-${Date.now()}`;
-        persistSession(fallbackGUser, gToken);
-        setNeedsUsername(isNew);
-        setIsLoading(false);
-        return { success: true, user: fallbackGUser, isNew };
-      }
-      setAuthError(e.message || 'Google sign-in could not be completed.');
+      const userEmail = data.user.email || '';
+      const savedHandle = getSavedHandle(userEmail);
+      const finalHandle = savedHandle || data.user.username;
+      const isNew = savedHandle ? false : !!(data.is_new_user || data.needs_username);
+      const gUser = {
+        ...data.user,
+        username: finalHandle,
+        displayName: data.user.display_name || finalHandle,
+        role: data.user.role || 'user',
+        provider: 'google',
+        avatarUrl: data.user.avatar_url || profileData.avatarUrl || null,
+        needsUsername: isNew,
+      };
+      persistSession(gUser, data.token);
+      setNeedsUsername(isNew);
       setIsLoading(false);
-      return { success: false, error: e.message };
+      return { success: true, user: gUser, isNew };
+    } catch (error) {
+      console.warn('Google auth endpoint error:', error);
+      const message = error.message || 'Google sign-in could not be completed.';
+      setAuthError(message);
+      setIsLoading(false);
+      return { success: false, error: message };
     }
-
-    // Client-side fallback for offline/mock Google OAuth testing
-    const fallbackEmail = email || profileData.email || 'user@example.com';
-    const savedHandle = existingHandle || getSavedHandle(fallbackEmail);
-    const fallbackIsAdmin = checkIsAdminIdentity(fallbackEmail, name) || chosenRole === 'admin';
-    const finalHandle = savedHandle || fallbackEmail.split('@')[0];
-    const isNew = !savedHandle;
-
-    const fallbackGUser = {
-      id: Date.now(),
-      username: finalHandle,
-      email: fallbackEmail,
-      displayName: finalHandle,
-      role: fallbackIsAdmin ? 'admin' : chosenRole,
-      provider: 'google',
-      avatarUrl: profileData.avatarUrl || null,
-      needsUsername: isNew,
-    };
-    const gToken = `token-google-${Date.now()}`;
-    persistSession(fallbackGUser, gToken);
-    setNeedsUsername(isNew);
-    setIsLoading(false);
-    return { success: true, user: fallbackGUser, isNew };
   };
 
   /**
@@ -455,7 +393,9 @@ export function AuthProvider({ children }) {
 
         if (res.ok) {
           const data = await res.json();
-          const isAdmin = checkIsAdminIdentity(user?.email, cleanName) || user?.role === 'admin';
+          const isAdmin = user?.provider === 'google'
+            ? user?.role === 'admin'
+            : checkIsAdminIdentity(user?.email, cleanName) || user?.role === 'admin';
           const updated = {
             ...user,
             username: cleanName,
@@ -477,7 +417,9 @@ export function AuthProvider({ children }) {
 
     // Local state fallback
     if (user) {
-      const isAdmin = checkIsAdminIdentity(user.email, cleanName) || user.role === 'admin';
+      const isAdmin = user.provider === 'google'
+        ? user.role === 'admin'
+        : checkIsAdminIdentity(user.email, cleanName) || user.role === 'admin';
       const updated = {
         ...user,
         username: cleanName,

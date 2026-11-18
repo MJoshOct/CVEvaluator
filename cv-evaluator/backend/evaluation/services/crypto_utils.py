@@ -126,7 +126,7 @@ def mask_secret(secret: str, prefix_len: int = 4, suffix_len: int = 4) -> str:
     Masks a sensitive API key or secret for safe display in the Admin Dashboard.
     Example:
       'gsk_1234567890abcdef' -> 'gsk_************cdef'
-      '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' -> 'GOCS************X9T'
+      'GOCSPX-dummyClientSecretExample' -> 'GOCS************mple'
     """
     if not secret:
         return ""

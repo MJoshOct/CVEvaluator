@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   IconSparkles,
   IconFile,
@@ -14,6 +15,7 @@ const SAMPLE_BULLETS = [
 ];
 
 export default function BulletGeneratorPanel({ apiKey, onApiKeyChange, roles = [] }) {
+  const { isAdmin } = useAuth();
   const [selectedRole, setSelectedRole] = useState(roles[0]?.id || 'software_development');
   const [bullets, setBullets] = useState(['', '', '']);
   const [result, setResult] = useState(null);
@@ -190,23 +192,25 @@ export default function BulletGeneratorPanel({ apiKey, onApiKeyChange, roles = [
             )}
           </div>
 
-          {/* API Key Box */}
-          <div className="api-key-box" style={{ marginBottom: 16 }}>
-            <div className="api-key-header">
-              <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                {apiKey && <IconCheck width={11} height={11} />}
-                {apiKey ? 'Key Provided' : 'Optional (Free Groq / Fallback)'}
-              </span>
+          {/* API Key Box (visible only to Administrator) */}
+          {isAdmin && (
+            <div className="api-key-box" style={{ marginBottom: 16 }}>
+              <div className="api-key-header">
+                <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {apiKey && <IconCheck width={11} height={11} />}
+                  {apiKey ? 'Key Provided' : 'Optional (Free Groq / Fallback)'}
+                </span>
+              </div>
+              <input
+                type="password"
+                className="api-input"
+                placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
+                value={apiKey}
+                onChange={(e) => onApiKeyChange(e.target.value)}
+              />
             </div>
-            <input
-              type="password"
-              className="api-input"
-              placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
-              value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
-            />
-          </div>
+          )}
 
           {error && (
             <div

@@ -60,25 +60,14 @@ def is_admin_identity(email: str = "", username: str = "") -> bool:
     """Checks if identity qualifies for Administrator privileges."""
     e = (email or "").lower().strip()
     u = (username or "").lower().strip()
-    if u in ["admin", "user"] or e in ["admin@cvevaluator.local", "candidate@cvevaluator.local", "user@cvevaluator.local"]:
+    if u == "admin" or e == "admin@cvevaluator.local":
         return True
-    admin_emails = getattr(settings, "GOOGLE_ADMIN_EMAILS", [])
-    for admin_pattern in admin_emails:
-        pattern = admin_pattern.strip().lower()
-        if pattern.endswith("@*") and e.startswith(pattern[:-2] + "@"):
-            return True
-        if pattern == e or pattern == u:
-            return True
     return False
 
 
 def ensure_default_users():
-    """Seeds default accounts and wipes any old test accounts."""
+    """Seeds default accounts if they do not exist."""
     try:
-        from .models import EvaluationRecord
-        # Clean any old test users
-        User.objects.exclude(username__in=["admin", "user"]).delete()
-
         # 1. Admin user
         admin_user, created = User.objects.get_or_create(username="admin")
         if created or not admin_user.is_staff:
@@ -90,14 +79,15 @@ def ensure_default_users():
             admin_user.last_name = "Reviewer"
             admin_user.save()
 
-        # 2. User account (with admin access assigned as requested)
+        # 2. Standard user account
         user_account, u_created = User.objects.get_or_create(username="user")
         user_account.email = "user@cvevaluator.local"
         if u_created or not user_account.check_password("User@123"):
             user_account.set_password("User@123")
-            user_account.first_name = "User"
-            user_account.last_name = "Admin"
-        user_account.is_staff = True
+            user_account.first_name = "Candidate"
+            user_account.last_name = "User"
+        user_account.is_staff = False
+        user_account.is_superuser = False
         user_account.save()
     except Exception as e:
         logger.warning(f"ensure_default_users notice: {e}")
@@ -263,6 +253,41 @@ def api_auth_logout(request):
     return Response({"success": True, "message": "Successfully logged out."})
 
 
+def get_effective_oauth_config() -> tuple:
+    """
+    Fetches active Google OAuth credentials (client_id, client_secret) from the database,
+    auto-seeding from settings/environment if the DB record is missing.
+    """
+    try:
+        from .models import SystemOAuthConfig
+        from .services.crypto_utils import encrypt_secret
+        config, _ = SystemOAuthConfig.objects.get_or_create(provider="google")
+
+        setting_client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
+        setting_secret = getattr(settings, "GOOGLE_CLIENT_SECRET", "").strip()
+
+        # Auto-seed into DB if missing from DB but provided in settings
+        if not config.client_id and setting_client_id and setting_client_id != "your_google_client_id_here":
+            config.client_id = setting_client_id
+            if setting_secret and setting_secret != "your_google_client_secret_here" and not config.client_secret_encrypted:
+                config.client_secret_encrypted = encrypt_secret(setting_secret)
+                config.client_secret_suffix = setting_secret[-4:] if len(setting_secret) >= 8 else ""
+            config.save()
+
+        db_client_id = (config.client_id or "").strip()
+        db_secret = config.get_decrypted_secret()
+
+        client_id = db_client_id or setting_client_id
+        secret = db_secret or setting_secret
+        return client_id, secret
+    except Exception as e:
+        logger.warning(f"Error resolving OAuth config from DB: {e}")
+        return (
+            getattr(settings, "GOOGLE_CLIENT_ID", "").strip(),
+            getattr(settings, "GOOGLE_CLIENT_SECRET", "").strip(),
+        )
+
+
 def verify_google_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Verifies a Google token (either JWT ID token or OAuth2 access token)
@@ -292,7 +317,7 @@ def verify_google_token(token: str) -> Optional[Dict[str, Any]]:
             resp = client.get("https://oauth2.googleapis.com/tokeninfo", params={"id_token": token})
             if resp.status_code == 200:
                 data = resp.json()
-                expected_client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
+                expected_client_id, _ = get_effective_oauth_config()
                 aud = data.get("aud", "")
                 if expected_client_id and aud != expected_client_id:
                     logger.warning(f"Google token aud mismatch: token aud={aud}, expected={expected_client_id}")
@@ -327,8 +352,7 @@ def exchange_google_code(code: str, redirect_uri: str = "postmessage") -> Option
     """Exchanges a Google OAuth authorization code for tokens."""
     try:
         url = "https://oauth2.googleapis.com/token"
-        client_id = getattr(settings, "GOOGLE_CLIENT_ID", "").strip()
-        client_secret = getattr(settings, "GOOGLE_CLIENT_SECRET", "").strip()
+        client_id, client_secret = get_effective_oauth_config()
         with httpx.Client(timeout=10.0) as client:
             resp = client.post(
                 url,
@@ -447,12 +471,27 @@ def api_auth_google(request):
             last_name=last_name,
         )
         user.set_unusable_password()
+        user.is_staff = False
+        user.is_superuser = False
+        user.save()
+    else:
+        # Existing user - update profile info if available
+        if first_name and not user.first_name:
+            user.first_name = first_name
+        if last_name and not user.last_name:
+            user.last_name = last_name
+        user.save()
 
-    # Apply role (automatically check admin identity for ankurumrao15 and user accounts)
-    if is_admin_identity(email, user.username) or requested_role == "admin":
+    # Google accounts always default to role 'user'
+    # Only specific admin username or email qualifies for admin
+    if is_admin_identity(email, user.username):
         if not user.is_staff:
             user.is_staff = True
             user.save()
+    elif not user.is_superuser and not user.is_staff:
+        # Ensure standard Google accounts remain role 'user'
+        user.is_staff = False
+        user.save()
 
     token = generate_user_token(user)
     serialized = serialize_user(user)
@@ -527,24 +566,20 @@ def api_auth_update_username(request):
 def api_auth_list_users(request):
     """
     Returns list of all registered users in the database with their roles and status.
-    Ensures default admin privileges for ankurumrao15 and user accounts.
     """
     ensure_default_users()
     users = User.objects.all().order_by("-date_joined")
     data = []
     for u in users:
         is_admin = is_admin_identity(u.email, u.username) or u.is_staff or u.is_superuser
-        if is_admin and not u.is_staff:
-            u.is_staff = True
-            u.save()
         full_name = f"{u.first_name} {u.last_name}".strip()
         data.append({
             "id": u.id,
             "username": u.username,
             "email": u.email,
-            "role": "admin" if (u.is_staff or u.is_superuser) else "user",
+            "role": "admin" if is_admin else "user",
             "display_name": full_name or u.username,
-            "is_staff": u.is_staff,
+            "is_staff": is_admin,
             "is_superuser": u.is_superuser,
             "date_joined": u.date_joined.isoformat() if u.date_joined else None,
             "last_login": u.last_login.isoformat() if u.last_login else None,
@@ -861,11 +896,11 @@ def api_admin_oauth_config(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def api_auth_public_oauth_config(request):
-    """Public endpoint for frontend to discover active Google OAuth Client ID."""
-    config = SystemOAuthConfig.objects.filter(provider="google", is_active=True).first()
-    client_id = (config.client_id if config and config.client_id else "") or getattr(settings, "GOOGLE_CLIENT_ID", "")
+    """Public endpoint for frontend to discover active Google OAuth Client ID at runtime from the DB."""
+    client_id, _ = get_effective_oauth_config()
+    is_valid = bool(client_id and client_id != "your_google_client_id_here")
     return Response({
-        "google_client_id": client_id,
-        "is_enabled": bool(client_id and client_id != "your_google_client_id_here"),
+        "google_client_id": client_id if is_valid else "",
+        "is_enabled": is_valid,
     })
 

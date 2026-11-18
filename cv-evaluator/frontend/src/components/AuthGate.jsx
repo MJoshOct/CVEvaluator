@@ -15,9 +15,7 @@ import {
 } from './Icons';
 import { calculatePasswordStrength } from '../utils/crypto';
 
-const GOOGLE_CLIENT_ID =
-  import.meta.env?.VITE_GOOGLE_CLIENT_ID ||
-  '579740202902-bi2bhgpfpcej1vad61v5p5cvsnnf9pun.apps.googleusercontent.com';
+const BUILD_GOOGLE_CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID || '';
 
 export default function AuthGate({ children }) {
   const {
@@ -35,6 +33,7 @@ export default function AuthGate({ children }) {
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [submitting, setSubmitting] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState(BUILD_GOOGLE_CLIENT_ID);
 
   // Form states - initialize clean and empty
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
@@ -62,11 +61,6 @@ export default function AuthGate({ children }) {
   const [regRole, setRegRole] = useState('user'); // Default user
   const [showRegPassword, setShowRegPassword] = useState(false);
 
-  // Google OAuth Modal state
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
-  const [mockGoogleRole, setMockGoogleRole] = useState('user');
-  const [mockGoogleEmail, setMockGoogleEmail] = useState('');
-
   // New Google Account Username Prompt State
   const [customUsername, setCustomUsername] = useState('');
   const [usernameError, setUsernameError] = useState(null);
@@ -80,53 +74,21 @@ export default function AuthGate({ children }) {
     }
   }, [needsUsername, user]);
 
-  // Handle credential response from Google Identity Services
-  const handleGoogleCredentialResponse = async (response) => {
-    if (!response || !response.credential) return;
-    setSubmitting(true);
-    setAuthError(null);
-    try {
-      const result = await loginWithGoogle({
-        id_token: response.credential,
-        credential: response.credential,
-        role: 'user',
-      });
-      if (!result.success && result.error) {
-        setAuthError(result.error);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Initialize Google Identity Services on mount (Hook called unconditionally)
+  // Prefer the active server-side OAuth client; use the build-time value if
+  // the backend is temporarily unavailable (for example during local dev).
   useEffect(() => {
-    const initGoogleGSI = () => {
-      if (typeof window !== 'undefined' && window.google?.accounts?.id && GOOGLE_CLIENT_ID) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
-        } catch (e) {
-          console.warn('Google GSI initialization notice:', e);
-        }
-      }
-    };
-
-    if (typeof window !== 'undefined' && window.google?.accounts?.id) {
-      initGoogleGSI();
-    } else {
-      const timer = setInterval(() => {
-        if (typeof window !== 'undefined' && window.google?.accounts?.id) {
-          clearInterval(timer);
-          initGoogleGSI();
-        }
-      }, 400);
-      return () => clearInterval(timer);
-    }
+    let cancelled = false;
+    fetch('/api/auth/oauth-config', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((config) => {
+        if (cancelled) return;
+        const runtimeClientId = config?.is_enabled ? config.google_client_id?.trim() : '';
+        if (runtimeClientId) setGoogleClientId(runtimeClientId);
+      })
+      .catch((error) => {
+        console.warn('Could not load the active Google OAuth client:', error);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   // Conditional early returns placed safely AFTER all hooks
@@ -282,109 +244,101 @@ export default function AuthGate({ children }) {
     }
   };
 
-  // Quick fill demo credentials
-  const fillDemo = (type) => {
-    setAuthError(null);
-    if (type === 'admin') {
-      setUsernameOrEmail('admin');
-      setPassword('Admin@123');
-    } else {
-      setUsernameOrEmail('user');
-      setPassword('User@123');
-    }
-  };
-
   // Google OAuth button click - triggers "Choose an account" window
   const handleGoogleBtnClick = () => {
-    // 1. Google Identity Services OAuth 2.0 Token Client (explicitly opens "Choose an account" popup)
-    if (typeof window !== 'undefined' && window.google?.accounts?.oauth2 && GOOGLE_CLIENT_ID) {
-      try {
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'email profile openid',
-          prompt: 'select_account',
-          callback: async (tokenResponse) => {
-            if (tokenResponse && tokenResponse.access_token) {
-              setSubmitting(true);
-              setAuthError(null);
-              try {
-                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-                });
-                if (res.ok) {
-                  const profile = await res.json();
-                  await loginWithGoogle({
-                    email: profile.email,
-                    name: profile.name || profile.given_name || profile.email.split('@')[0],
-                    avatarUrl: profile.picture,
-                    google_id: profile.sub,
-                    id_token: tokenResponse.access_token,
-                    access_token: tokenResponse.access_token,
-                    role: 'user',
-                  });
-                  return;
-                }
-              } catch (e) {
-                console.warn('Error fetching Google profile with token:', e);
-              } finally {
-                setSubmitting(false);
-              }
-            }
-          },
-          error_callback: (err) => {
-            console.warn('Google TokenClient notice:', err);
-            setIsGoogleModalOpen(true);
-          },
-        });
-
-        tokenClient.requestAccessToken({ prompt: 'select_account' });
-        return;
-      } catch (err) {
-        console.warn('Google OAuth2 popup init notice:', err);
-      }
+    setAuthError(null);
+    if (!googleClientId) {
+      setAuthError('Google sign-in is not configured. Set a Web application client ID in Admin → AI & OAuth.');
+      return;
     }
-
-    // 2. Direct browser popup to Google's "Choose an account" endpoint
-    if (typeof window !== 'undefined' && GOOGLE_CLIENT_ID) {
-      const width = 500;
-      const height = 620;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      const redirectUri = window.location.origin;
-      const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token%20id_token&scope=email%20profile%20openid&prompt=select_account&nonce=${Date.now()}`;
-
-      const popup = window.open(
-        googleAuthUrl,
-        'google_oauth_popup',
-        `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no`
-      );
-
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        setIsGoogleModalOpen(true);
-      }
+    if (!window.google?.accounts?.oauth2) {
+      setAuthError('Google Identity Services did not load. Check your network connection and reload this page.');
       return;
     }
 
-    setIsGoogleModalOpen(true);
-  };
+    try {
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: 'email profile openid',
+        prompt: 'select_account',
+        callback: async (tokenResponse) => {
+          // If the user closed or dismissed the popup, do nothing
+          if (
+            tokenResponse?.error === 'popup_closed_by_user' ||
+            tokenResponse?.error === 'access_denied' ||
+            tokenResponse?.error === 'user_cancel'
+          ) {
+            return;
+          }
+          if (tokenResponse?.error) {
+            setAuthError(`Google sign-in error: ${tokenResponse.error}`);
+            return;
+          }
+          if (!tokenResponse?.access_token) {
+            setAuthError('Google did not return an access token. Please try again.');
+            return;
+          }
 
-  const handleExecuteGoogleDemo = async () => {
-    setSubmitting(true);
-    await loginWithGoogle({
-      id_token: `mock-google-${Date.now()}`,
-      email: mockGoogleEmail,
-      name: mockGoogleEmail.split('@')[0].replace('.', ' '),
-      role: mockGoogleRole,
-      avatarUrl: null,
-    });
-    setSubmitting(false);
-    setIsGoogleModalOpen(false);
+          setSubmitting(true);
+          setAuthError(null);
+          try {
+            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+            });
+            if (!res.ok) throw new Error('Google could not verify the selected account.');
+            const profile = await res.json();
+            const result = await loginWithGoogle({
+              email: profile.email,
+              name: profile.name || profile.given_name || profile.email.split('@')[0],
+              avatarUrl: profile.picture,
+              google_id: profile.sub,
+              access_token: tokenResponse.access_token,
+              role: 'user',
+            });
+            if (!result.success) setAuthError(result.error || 'Google sign-in could not be completed.');
+          } catch (error) {
+            setAuthError(error.message || 'Google sign-in could not be completed.');
+          } finally {
+            setSubmitting(false);
+          }
+        },
+        error_callback: (error) => {
+          // Suppress error on user-initiated cancellation (clicking 'X' or closing popup)
+          const isCancelled =
+            error?.type === 'popup_closed' ||
+            error?.type === 'popup_closed_by_user' ||
+            error?.error === 'popup_closed_by_user' ||
+            error?.error === 'access_denied';
+          if (!isCancelled) {
+            console.warn('Google TokenClient error:', error);
+            setAuthError(`Google rejected sign-in from ${window.location.origin}. Please ensure this origin is authorized in Google Cloud Console.`);
+          }
+        },
+      });
+      tokenClient.requestAccessToken({ prompt: 'select_account' });
+    } catch (error) {
+      console.warn('Google OAuth popup could not be opened:', error);
+      setAuthError(error.message || 'Google sign-in could not be opened.');
+    }
   };
 
   const passwordStrength = calculatePasswordStrength(regPassword);
 
   return (
     <div className="auth-page-wrapper">
+      <section className="auth-welcome-panel" aria-label="CV Evaluator overview">
+        <div className="auth-welcome-top">
+          <div className="auth-brand-badge">CV</div>
+          <span>CV EVALUATOR</span>
+        </div>
+        <div className="auth-welcome-copy">
+          <span className="auth-welcome-kicker">YOUR NEXT MOVE STARTS HERE</span>
+          <h1>Make your experience<br />stand out.</h1>
+          <p>Turn your resume into a clear plan for your next opportunity with focused, practical feedback.</p>
+        </div>
+        <img className="auth-hero-image" src="/mockups/login-hero-career.svg" alt="Career profile and progress illustration" />
+        <div className="auth-welcome-foot"><IconShield width={16} height={16} /><span>Your account and resume stay private.</span></div>
+      </section>
       <div className="auth-card-container">
         {/* Top Brand & Header */}
         <div className="auth-brand-header">
@@ -408,7 +362,7 @@ export default function AuthGate({ children }) {
             }}
           >
             <IconUser width={15} height={15} style={{ marginRight: 6 }} />
-            Single Sign-On (SSO)
+            Sign in
           </button>
           <button
             type="button"
@@ -419,7 +373,7 @@ export default function AuthGate({ children }) {
             }}
           >
             <IconSparkles width={15} height={15} style={{ marginRight: 6 }} />
-            Create Account
+            Create account
           </button>
         </div>
 
@@ -434,6 +388,7 @@ export default function AuthGate({ children }) {
         {/* ─── 1. LOGIN FORM ────────────────────────────────────────────── */}
         {authMode === 'login' ? (
           <form onSubmit={handleLoginSubmit} className="auth-form" autoComplete="off">
+            <div className="auth-form-intro"><h2>Welcome back</h2><p>Sign in to continue to your workspace.</p></div>
             {/* Decoy hidden inputs prevent Chrome's aggressive autofill from populating real fields */}
             <input type="text" name="decoy_user_prevent_autofill" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
             <input type="password" name="decoy_pass_prevent_autofill" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
@@ -449,7 +404,7 @@ export default function AuthGate({ children }) {
                   name="cveval_auth_identity"
                   autoComplete="off"
                   data-lpignore="true"
-                  placeholder="e.g. admin, user, or your email"
+                  placeholder="enter your email or username"
                   className="auth-input"
                   style={{ paddingRight: usernameOrEmail ? 36 : 14 }}
                   value={usernameOrEmail}
@@ -469,12 +424,7 @@ export default function AuthGate({ children }) {
             </div>
 
             <div className="auth-field-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="auth-label">Password</label>
-                <span style={{ fontSize: '0.75rem', color: 'var(--blue)', fontWeight: 500 }}>
-                  Encrypted
-                </span>
-              </div>
+              <label className="auth-label">Password</label>
               <div className="auth-input-wrapper">
                 <IconLock width={16} height={16} className="auth-input-icon" />
                 <input
@@ -543,31 +493,6 @@ export default function AuthGate({ children }) {
               )}
             </div>
 
-            {/* Quick Demo Credentials Switcher */}
-            <div className="auth-demo-chips-container">
-              <div className="auth-demo-chips-label">Quick Demo Access:</div>
-              <div className="auth-demo-chips-row">
-                <button
-                  type="button"
-                  className="auth-demo-chip admin"
-                  onClick={() => fillDemo('admin')}
-                  title="Load Admin account (admin / Admin@123)"
-                >
-                  <IconCrown width={13} height={13} style={{ marginRight: 4 }} />
-                  <strong>Admin</strong>
-                </button>
-                <button
-                  type="button"
-                  className="auth-demo-chip admin"
-                  onClick={() => fillDemo('user')}
-                  title="Load User account (user / User@123)"
-                >
-                  <IconUser width={13} height={13} style={{ marginRight: 4 }} />
-                  <strong>User (Admin)</strong>
-                </button>
-              </div>
-            </div>
-
             {/* Divider */}
             <div className="auth-divider">
               <span>or connect with</span>
@@ -586,37 +511,6 @@ export default function AuthGate({ children }) {
         ) : (
           /* ─── 2. REGISTER FORM ────────────────────────────────────────── */
           <form onSubmit={handleRegisterSubmit} className="auth-form" autoComplete="off">
-            <div className="auth-field-group">
-              <label className="auth-label">Account Role</label>
-              <div className="auth-role-select-grid">
-                <div
-                  className={`auth-role-option-card ${regRole === 'admin' ? 'selected' : ''}`}
-                  onClick={() => setRegRole('admin')}
-                >
-                  <div className="auth-role-option-title">
-                    <IconCrown width={15} height={15} style={{ marginRight: 6, color: 'var(--purple)' }} />
-                    Administrator
-                  </div>
-                  <div className="auth-role-option-desc">
-                    Full evaluation logs, system analytics dashboard &amp; candidate record management.
-                  </div>
-                </div>
-
-                <div
-                  className={`auth-role-option-card ${regRole === 'user' ? 'selected' : ''}`}
-                  onClick={() => setRegRole('user')}
-                >
-                  <div className="auth-role-option-title">
-                    <IconUser width={15} height={15} style={{ marginRight: 6 }} />
-                    Candidate / User
-                  </div>
-                  <div className="auth-role-option-desc">
-                    Evaluate CV, check ATS score, match job descriptions &amp; AI interview prep.
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="auth-field-group">
               <label className="auth-label">Username</label>
               <div className="auth-input-wrapper">
@@ -710,188 +604,12 @@ export default function AuthGate({ children }) {
               disabled={submitting}
               className="auth-submit-btn"
             >
-              {submitting ? 'Creating Secure Account...' : `Register as ${regRole === 'admin' ? 'Admin' : 'User'}`}
+              {submitting ? 'Creating Secure Account...' : 'Register'}
             </button>
           </form>
         )}
       </div>
 
-      {/* ─── GOOGLE OAUTH MODAL ───────────────────────────────────────────── */}
-      {isGoogleModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsGoogleModalOpen(false)}>
-          <div className="modal-content auth-google-modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <IconGoogle width={42} height={42} />
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginTop: 10, marginBottom: 4 }}>
-                Sign In with Google
-              </h2>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                Google OAuth 2.0 Integration &bull; Project <code>resume-514314</code>
-              </p>
-            </div>
-
-            {/* Error 401 Origin Guidance Banner */}
-            <div className="auth-google-info-box" style={{ background: '#f8fafc', borderLeft: '4px solid var(--blue)' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: 4, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <IconShield width={14} height={14} style={{ color: 'var(--blue)' }} />
-                <span>Google OAuth Origin Status:</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                If Google's popup showed <em>&ldquo;Error 401: invalid_client - no registered origin&rdquo;</em>,
-                ensure <code>http://localhost:3000</code> is saved under <strong>Authorized JavaScript origins</strong> in
-                Google Cloud Console. You can also sign in directly below with any of your Google accounts:
-              </p>
-            </div>
-
-            {/* Account Quick Selectors */}
-            <div style={{ marginTop: 14 }}>
-              <label className="auth-label" style={{ marginBottom: 6 }}>Select or Enter Google Account:</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
-                <button
-                  type="button"
-                  className={`auth-demo-chip ${mockGoogleRole === 'admin' ? 'active' : ''}`}
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: mockGoogleRole === 'admin' ? '2px solid var(--blue)' : '1px solid var(--border)',
-                    background: mockGoogleRole === 'admin' ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-main)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setMockGoogleEmail('admin@cvevaluator.local');
-                    setMockGoogleRole('admin');
-                  }}
-                >
-                  <IconCrown width={16} height={16} style={{ color: '#f59e0b', marginBottom: 4 }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>Admin Access</span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Administrator</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`auth-demo-chip ${mockGoogleEmail === 'candidate@cvevaluator.local' ? 'active' : ''}`}
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: mockGoogleEmail === 'candidate@cvevaluator.local' ? '2px solid var(--blue)' : '1px solid var(--border)',
-                    background: mockGoogleEmail === 'candidate@cvevaluator.local' ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-main)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setMockGoogleEmail('candidate@cvevaluator.local');
-                    setMockGoogleRole('user');
-                  }}
-                >
-                  <IconUser width={16} height={16} style={{ color: 'var(--blue)', marginBottom: 4 }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>Candidate</span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Standard User</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`auth-demo-chip ${mockGoogleEmail.includes('new_user') ? 'active' : ''}`}
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: mockGoogleEmail.includes('new_user') ? '2px solid var(--blue)' : '1px solid var(--border)',
-                    background: mockGoogleEmail.includes('new_user') ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-main)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setMockGoogleEmail(`user_${Date.now().toString().slice(-4)}@gmail.com`);
-                    setMockGoogleRole('user');
-                  }}
-                >
-                  <IconSparkles width={16} height={16} style={{ color: 'var(--purple)', marginBottom: 4 }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>New Account</span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Choose Handle</span>
-                </button>
-              </div>
-
-              <div className="auth-field-group">
-                <label className="auth-label">Google Account Email</label>
-                <div className="auth-input-wrapper">
-                  <IconGoogle width={16} height={16} className="auth-input-icon" />
-                  <input
-                    type="email"
-                    required
-                    className="auth-input"
-                    value={mockGoogleEmail}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setMockGoogleEmail(val);
-                      if (checkIsAdminIdentity(val, '')) {
-                        setMockGoogleRole('admin');
-                      }
-                    }}
-                    placeholder="Enter any Google email address"
-                  />
-                </div>
-              </div>
-
-              <div className="auth-field-group" style={{ marginTop: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="auth-label">Assigned Role</label>
-                  {checkIsAdminIdentity(mockGoogleEmail, '') && (
-                    <span style={{ fontSize: '0.74rem', color: '#f59e0b', fontWeight: 600 }}>
-                      Administrator access enforced for this identity
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button
-                    type="button"
-                    className={`mode-tab ${mockGoogleRole === 'admin' ? 'active' : ''}`}
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => setMockGoogleRole('admin')}
-                  >
-                    <IconCrown width={14} height={14} style={{ marginRight: 6 }} />
-                    Administrator
-                  </button>
-                  <button
-                    type="button"
-                    className={`mode-tab ${mockGoogleRole === 'user' ? 'active' : ''}`}
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => setMockGoogleRole('user')}
-                    disabled={checkIsAdminIdentity(mockGoogleEmail, '')}
-                  >
-                    <IconUser width={14} height={14} style={{ marginRight: 6 }} />
-                    Candidate User
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 18 }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsGoogleModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleExecuteGoogleDemo}
-                disabled={submitting || !mockGoogleEmail}
-              >
-                <IconGoogle width={16} height={16} style={{ marginRight: 8 }} />
-                Sign In with this Google Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

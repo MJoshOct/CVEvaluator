@@ -64,7 +64,7 @@ function AppContent() {
   const navigationItems = [
     { id: 'overview', label: 'Overview', Icon: IconChart },
     ...availableModes.filter((mode) => mode.id !== 'admin-dashboard'),
-    { id: 'history', label: 'History', Icon: IconClock },
+    ...(!isAdmin ? [{ id: 'history', label: 'History', Icon: IconClock }] : []),
     ...(isAdmin ? [availableModes.find((mode) => mode.id === 'admin-dashboard')] : []),
   ].filter(Boolean);
 
@@ -72,6 +72,9 @@ function AppContent() {
   useEffect(() => {
     if (!isAdmin && activeMode === 'admin-dashboard') {
       setActiveMode('evaluator');
+    }
+    if (isAdmin && activeMode === 'history') {
+      setActiveMode('admin-dashboard');
     }
   }, [isAdmin, activeMode]);
 
@@ -407,7 +410,7 @@ function AppContent() {
       {/* ─────────────────────────────────────────────────────────────
           4. ADMIN DASHBOARD & ANALYTICS MODE
          ───────────────────────────────────────────────────────────── */}
-      {(activeMode === 'history' || activeMode === 'admin-dashboard') && (isAdmin || activeMode === 'history') && (
+      {((!isAdmin && activeMode === 'history') || (isAdmin && activeMode === 'admin-dashboard')) && (
         <UserDashboard adminView={activeMode === 'admin-dashboard'} onOpenRecord={handleOpenRecord} />
       )}
 
@@ -428,7 +431,7 @@ function AppContent() {
       </div>
       <nav className="mobile-workspace-nav" aria-label="Mobile navigation">
         {(isAdmin
-          ? navigationItems.filter((item) => ['overview', 'evaluator', 'jd-match', 'history', 'admin-dashboard'].includes(item.id))
+          ? navigationItems.filter((item) => ['overview', 'evaluator', 'jd-match', 'admin-dashboard'].includes(item.id))
           : navigationItems.slice(0, 5)
         ).map((item) => {
           const NavIcon = item.id === 'admin-dashboard' ? AdminConsoleIcon : item.Icon;

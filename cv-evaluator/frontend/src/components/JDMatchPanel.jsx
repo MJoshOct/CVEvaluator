@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   IconTarget,
   IconFile,
@@ -45,6 +46,7 @@ EDUCATION
 B.S. in Computer Science | University of California, Berkeley (2017 – 2021)`;
 
 export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
+  const { isAdmin } = useAuth();
   const [cvMode, setCvMode] = useState('paste'); // 'upload' | 'paste'
   const [cvFile, setCvFile] = useState(null);
   const [cvText, setCvText] = useState('');
@@ -289,23 +291,25 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
             </div>
           </div>
 
-          {/* API Key Box */}
-          <div className="api-key-box" style={{ marginTop: 0, marginBottom: 16 }}>
-            <div className="api-key-header">
-              <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                {apiKey && <IconCheck width={11} height={11} />}
-                {apiKey ? 'Key Provided' : 'Optional (Fallback heuristics run if omitted)'}
-              </span>
+          {/* API Key Box (visible only to Administrator) */}
+          {isAdmin && (
+            <div className="api-key-box" style={{ marginTop: 0, marginBottom: 16 }}>
+              <div className="api-key-header">
+                <span>AI Model API Key (Groq Free / Gemini / OpenAI)</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {apiKey && <IconCheck width={11} height={11} />}
+                  {apiKey ? 'Key Provided' : 'Optional (Fallback heuristics run if omitted)'}
+                </span>
+              </div>
+              <input
+                type="password"
+                className="api-input"
+                placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
+                value={apiKey}
+                onChange={(e) => onApiKeyChange(e.target.value)}
+              />
             </div>
-            <input
-              type="password"
-              className="api-input"
-              placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
-              value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
-            />
-          </div>
+          )}
 
           {error && (
             <div

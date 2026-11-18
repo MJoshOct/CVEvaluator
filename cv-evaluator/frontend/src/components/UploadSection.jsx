@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
 import {
   IconUpload,
   IconEdit,
@@ -153,6 +154,7 @@ export default function UploadSection({
   onEvaluate,
   isLoading
 }) {
+  const { isAdmin } = useAuth();
   const [inputMode, setInputMode] = useState('upload'); // 'upload', 'paste', or 'template'
   const [selectedFile, setSelectedFile] = useState(null);
   const [pastedText, setPastedText] = useState('');
@@ -646,26 +648,28 @@ export default function UploadSection({
           </div>
         )}
 
-        {/* AI API Key field */}
-        <div className="api-key-box">
-          <div className="api-key-header">
-            <span>AI Model API Key (Groq / Gemini / OpenAI)</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              {apiKey && <IconCheck width={11} height={11} />}
-              {apiKey ? 'Key Provided' : 'Optional (Enables AI Review)'}
-            </span>
+        {/* AI API Key field (visible only to Administrator) */}
+        {isAdmin && (
+          <div className="api-key-box">
+            <div className="api-key-header">
+              <span>AI Model API Key (Groq / Gemini / OpenAI)</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {apiKey && <IconCheck width={11} height={11} />}
+                {apiKey ? 'Key Provided' : 'Optional (Enables AI Review)'}
+              </span>
+            </div>
+            <input
+              type="password"
+              className="api-input"
+              placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+            />
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 4 }}>
+              Groq keys (<a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-blue)', textDecoration: 'underline' }}>console.groq.com</a>) automatically run on free Llama 3.3 70B models. Left empty, automated rule-based evaluation still runs.
+            </div>
           </div>
-          <input
-            type="password"
-            className="api-input"
-            placeholder="Enter API Key (e.g. gsk_... for Groq, AIza... for Gemini, sk-... for OpenAI)"
-            value={apiKey}
-            onChange={(e) => onApiKeyChange(e.target.value)}
-          />
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 4 }}>
-            Groq keys (<a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-blue)', textDecoration: 'underline' }}>console.groq.com</a>) automatically run on free Llama 3.3 70B models. Left empty, automated rule-based evaluation still runs.
-          </div>
-        </div>
+        )}
 
         <div style={{ marginTop: 20 }}>
           <button
