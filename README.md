@@ -1,6 +1,6 @@
 # CV Evaluator
 
-An enterprise-grade AI-powered CV and Resume Evaluation System designed to analyze candidate resumes against industry job roles, calculate ATS compatibility, identify skill gaps, and provide actionable AI feedback.
+An AI-powered CV and Resume Evaluation System designed to analyze candidate resumes against industry job roles, calculate ATS compatibility, identify skill gaps, and provide actionable AI feedback.
 
 ---
 
