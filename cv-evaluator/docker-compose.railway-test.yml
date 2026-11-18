@@ -1,0 +1,41 @@
+# Local test of Railway-style deployment (single service)
+# Usage: docker compose -f docker-compose.railway-test.yml up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cveval_user
+      POSTGRES_PASSWORD: cveval_pass
+      POSTGRES_DB: cveval_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cveval_user -d cveval_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cv-network
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://cveval_user:cveval_pass@db:5432/cveval_db
+      SECRET_KEY: test-secret-key-local-only
+      DEBUG: "False"
+      PORT: "8000"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      CORS_ALLOW_ALL: "True"
+      AI_PROVIDER: groq
+      AI_MODEL: llama-3.1-8b-instant
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cv-network
+
+networks:
+  cv-network:
+    driver: bridge

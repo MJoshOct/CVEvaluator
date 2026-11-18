@@ -13,7 +13,18 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-cveval-dev-key-change
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes', 't')
 
-ALLOWED_HOSTS = ['*']
+# Production security settings (only applied when DEBUG=False)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # Railway handles SSL termination
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_TRUSTED_ORIGINS = [
+        o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+    ]
+
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_ENV.split(',') if h.strip()] or ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,6 +41,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -43,7 +55,7 @@ ROOT_URLCONF = 'cveval.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'frontend_dist'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -58,7 +70,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cveval.wsgi.application'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL', 'False').lower() in ('true', '1')
+CORS_ALLOWED_ORIGINS_ENV = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [o.strip() for o in CORS_ALLOWED_ORIGINS_ENV.split(',') if o.strip()]
 
 # Database: PostgreSQL parsed from DATABASE_URL env var
 database_url = os.environ.get(
@@ -105,7 +119,13 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# React build output — Django will serve these as static files at the root
+WHITENOISE_ROOT = BASE_DIR / 'frontend_dist'
+WHITENOISE_INDEX_FILE = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

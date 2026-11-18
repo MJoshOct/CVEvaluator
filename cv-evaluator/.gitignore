@@ -19,3 +19,8 @@ env/
 *.sqlite3
 *.sqlite
 data/
+
+# Production build artifacts (copied into backend for Railway deploy)
+backend/frontend_dist/
+backend/staticfiles/
+
