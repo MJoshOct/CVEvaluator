@@ -1,6 +1,6 @@
 # CV Evaluator
 
-An AI-powered CV and Resume Evaluation System designed to analyze candidate resumes against industry job roles, calculate ATS compatibility, identify skill gaps, and provide actionable AI feedback.
+An AI-powered CV and Resume Evaluation System designed to analyse candidate resumes, calculate ATS compatibility, identify skill gaps, and provide actionable AI feedback.
 
 ---
 
@@ -9,7 +9,7 @@ An AI-powered CV and Resume Evaluation System designed to analyze candidate resu
 The platform features 4 distinct operation modes:
 
 1. **Resume Evaluator**
-   - **Stage 1a: Legitimacy Check** - Verifies minimum length, contact information, structural sections, and valid experience signals.
+   - **Stage 1a: Legitimacy Check** - contact information, structural sections, and valid experience signals.
    - **Stage 1b: ATS Score Calculation** - Generates an ATS grade, checks formatting compliance, and provides optimization tips.
    - **Stage 1c: Resume Parsing** - Extracts candidate details, categorized technical skills, and experience history.
    - **Stage 2a: Predefined Role Matching** - Matches skills against comprehensive industry criteria rubrics.
@@ -37,7 +37,7 @@ The system includes an Administrator Management Console with enterprise security
 - **Failover Protection:** Automatic failover between high-performance English text models (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `deepseek-r1-distill-llama-70b`, `qwen-2.5-32b`, `gemma2-9b-it`), with non-English and audio models automatically excluded.
 - **Dynamic Google OAuth 2.0:** Google Client ID and Client Secret can be configured dynamically through the Admin UI. No credentials or keys are hardcoded in the frontend.
 - **Encrypted at Rest:** All keys and secrets are encrypted in PostgreSQL using symmetric cryptography (HMAC-SHA256 authenticated cipher derived from the server secret key).
-- **Key & Client ID Masking:** Secrets and sensitive IDs are never exposed in plaintext in the UI or over public APIs (e.g. `gsk_••••••••••••3aB9`, `••••••••••••.apps.googleusercontent.com`).
+- **Key & Client ID Masking:** Secrets and sensitive IDs are never exposed in plaintext in the UI or over public APIs (e.g. `gsk_groq_key`, `••••••••••••.oauth.key`).
 - **Strict Factual Grounding:** AI prompts are engineered to prevent hallucinations. The AI only improves, polishes, and structures what is already in the candidate's CV—it will not invent unmentioned tools, fake jobs, or fabricated metrics.
 - **Smart Re-Authentication:**
   - **Password Accounts:** Admins who logged in with a password must re-enter their administrator password before adding, deleting, or editing system keys.
@@ -47,14 +47,14 @@ The system includes an Administrator Management Console with enterprise security
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite, Modern UI Components |
-| Backend | Python 3.11, Django 4.2, Django REST Framework |
-| Database | PostgreSQL 16 (Stored in isolated Docker volume) |
-| Containerization | Docker Compose (Dev) & Docker Swarm (Prod) |
-| AI Providers | Groq (Llama 3.3 / 3.1, DeepSeek R1 Distill), Google Gemini, OpenAI |
-| WSGI Server | Gunicorn |
+| Layer            |     Technology                                                      |
+|------------------|---------------------------------------------------------------------|
+| Frontend         | React 18, Vite, Modern UI Components                                |
+| Backend          | Python 3.11, Django 4.2, Django REST Framework                      |
+| Database         | PostgreSQL 16 (Stored in isolated Docker volume)                    |
+| Containerization | Docker Compose (Dev) & Docker Swarm (Prod)                          |
+| AI Providers     | Groq (Llama 3.3 / 3.1, DeepSeek R1 Distill), Google Gemini, OpenAI  |
+| WSGI Server      | Gunicorn                                                            |
 
 ---
 
