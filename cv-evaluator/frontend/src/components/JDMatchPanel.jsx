@@ -576,7 +576,7 @@ export default function JDMatchPanel({ apiKey, onApiKeyChange }) {
                       >
                         {idx + 1}
                       </span>
-                      <span style={{ fontSize: '0.86rem', lineHeight: 1.55, color: '#e0f2fe' }}>
+                      <span style={{ fontSize: '0.86rem', lineHeight: 1.55, color: '#1e293b' }}>
                         {rec}
                       </span>
                     </div>
